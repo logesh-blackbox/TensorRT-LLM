@@ -4,7 +4,6 @@ model_folder=glaive_multitask_tensorrt
 tokenizer=glaiveai/glaive-coder-7b
 
 
-
 declare -a batch_sizes=(
                 4
                 5
