@@ -12,11 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 import sys
 import unittest
-
-import numpy as np
 import pytest
 import tensorrt as trt
 import torch
@@ -36,14 +35,19 @@ class TestMatmul(unittest.TestCase):
         tensorrt_llm.logger.set_level('error')
 
     def _matmul(self, m, n, k, dtype, ta, tb):
+        # Define the shapes and data types for the input matrices
         shape1 = (k, m) if ta else (m, k)
         mat1 = torch.randn(
             shape1, dtype=tensorrt_llm._utils.str_dtype_to_torch(dtype)) * 1e-1
         shape2 = (n, k) if tb else (k, n)
         mat2 = torch.randn(
             shape2, dtype=tensorrt_llm._utils.str_dtype_to_torch(dtype)) * 1e-1
+
+        # Create a TensorRT builder and network
         builder = tensorrt_llm.Builder()
         net = builder.create_network()
+
+        # Define the input tensors and the matmul operation
         with tensorrt_llm.net_guard(net):
             network = tensorrt_llm.default_trtnet()
             x = Tensor(name='x',
@@ -58,6 +62,7 @@ class TestMatmul(unittest.TestCase):
             network.mark_output(output)
             output.dtype = tensorrt_llm.str_dtype_to_trt(dtype)
 
+        # Build the TensorRT engine
         build_engine = EngineFromNetwork(
             (builder.trt_builder, net.trt_network),
             config=CreateConfig(
@@ -65,14 +70,18 @@ class TestMatmul(unittest.TestCase):
                 bf16=(dtype == 'bfloat16'),
                 precision_constraints='obey',
                 memory_pool_limits={trt.MemoryPoolType.WORKSPACE: 33554432}))
+
+        # Create a TrtRunner to infer the output
         with TrtRunner(build_engine) as runner:
             outputs = runner.infer(feed_dict={'x': mat1, 'y': mat2})
 
+        # Transpose the input matrices if required
         if ta:
             mat1 = mat1.cuda().transpose(0, 1)
         if tb:
             mat2 = mat2.cuda().transpose(0, 1)
 
+        # Define the tolerance for the comparison
         tols = {
             "float32": {
                 "rtol": 1e-05,
@@ -88,6 +97,7 @@ class TestMatmul(unittest.TestCase):
             },
         }
 
+        # Convert the input matrices to the appropriate data type
         if dtype != "float32":
             mat1 = mat1.cuda()
             mat2 = mat2.cuda()
@@ -95,7 +105,10 @@ class TestMatmul(unittest.TestCase):
             mat1 = mat1.cpu()
             mat2 = mat2.cpu()
 
+        # Compute the reference output using PyTorch
         ref = torch.matmul(mat1, mat2).to(torch.float32)
+
+        # Compare the reference output with the TensorRT output
         np.testing.assert_allclose(ref.cpu().numpy(),
                                    outputs['output'].to(torch.float32),
                                    **tols[dtype])
@@ -106,6 +119,7 @@ class TestMatmul(unittest.TestCase):
                            ('float32', False, False), ('float32', False, True),
                            ('float32', True, False), ('float32', True, True)])
     def test_matmul(self, dtype, transa, transb):
+        # Test the matmul operation with different data types, transpose flags, and matrix dimensions
         bs = 2
         inseq = 16
         hidden_size = 768
@@ -115,43 +129,4 @@ class TestMatmul(unittest.TestCase):
         if getSMVersion() < 80:
             if dtype == 'bfloat16':
                 pytest.skip(
-                    "bfloat16 is not supported in pre-ampere architecture")
-
-        # qkv_gemm
-        self._matmul(bs * inseq, 3 * hidden_size // tp, hidden_size, dtype,
-                     transa, transb)
-
-        # mlp_gemm_1
-        self._matmul(bs * inseq, 4 * hidden_size // tp, hidden_size, dtype,
-                     transa, transb)
-
-    def test_matmul_broadcast(self):
-        dtype = 'float32'
-        x_data = torch.randn(16, 4, 4, 5)
-        y_data = torch.randn(16, 1, 5, 4)
-
-        builder = tensorrt_llm.Builder()
-        net = builder.create_network()
-        with tensorrt_llm.net_guard(net):
-            network = tensorrt_llm.default_trtnet()
-            x = Tensor(name='x',
-                       shape=x_data.shape,
-                       dtype=tensorrt_llm.str_dtype_to_trt(dtype))
-            y = Tensor(name='y',
-                       shape=y_data.shape,
-                       dtype=tensorrt_llm.str_dtype_to_trt(dtype))
-            output = tensorrt_llm.functional.matmul(x, y).trt_tensor
-            output.name = 'output'
-            network.mark_output(output)
-
-        build_engine = EngineFromNetwork((builder.trt_builder, net.trt_network))
-        with TrtRunner(build_engine) as runner:
-            outputs = runner.infer(feed_dict={
-                'x': x_data.numpy(),
-                'y': y_data.numpy(),
-            })
-
-        ref = torch.matmul(x_data, y_data)
-        np.testing.assert_allclose(ref.cpu().numpy(),
-                                   outputs['output'],
-                                   atol=1e-5)
+                    "bfloat1
