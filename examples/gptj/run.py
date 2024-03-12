@@ -36,7 +36,6 @@ PAD_ID = 50256
 START_ID = 50256
 END_ID = 50256
 
-
 def read_config(config_path: Path):
     with open(config_path, 'r') as f:
         config = json.load(f)
@@ -119,4 +118,4 @@ def print_output(output_ids, cum_log_probs, input_lengths, sequence_lengths,
             for beam in range(num_beams):
                 output_begin = input_lengths[b]
                 output_end = sequence_lengths[b][beam]
-                outputs = output_ids[b][beam][output_begin:output
+                outputs = output_ids[b][
