@@ -44,23 +44,46 @@ namespace kernels
  * @param stream The CUDA stream to execute the operation on.
  */
 template <typename T>
-void invokeBatchApplyRepetitionPenalty(T* logits, const float* penalties, const int** output_ids,
+void invokeBatchApplyRepetitionPenalty(T* logits, const float* penalties, const int* output_ids,
     const int* sequence_lengths, const int batch_size, const int local_batch_size, const int vocab_size,
-    const int* input_lengths, const RepetitionPenaltyType penalty_type, int max_seq_len, cudaStream_t stream);
+    const int* input_lengths, const RepetitionPenaltyType penalty_type, int max_seq_len, cudaStream_t stream)
+{
+    constexpr int kNumPenalties = 2;
+    constexpr int kPenaltyIndex = 0;
+    constexpr int kOutputIdIndex = 1;
 
-/**
- * @brief Applies temperature penalty to the given logits.
- *
- * This function applies a temperature penalty to the given logits based on the specified temperature.
- *
- * @tparam T The data type of the logits.
- * @param logits The logits to apply the temperature penalty to.
- * @param bias The bias to apply to the logits.
- * @param temperature The temperature to apply to the logits.
- * @param batch_size The size of the batch.
- * @param vocab_size The size of the vocabulary.
- * @param vocab_size_padd The padded size of the vocabulary.
- * @param stream The CUDA stream to execute the operation on.
- */
-template <typename T>
+    const int* penalties_ptr = penalties;
+    const int* output_ids_ptr = output_ids;
+
+    if (penalty_type == RepetitionPenaltyType::kRepetitionPenalty)
+    {
+        // Apply repetition penalty
+        for (int i = 0; i < batch_size; ++i)
+        {
+            const int seq_len = sequence_lengths[i];
+            const int* input_len_ptr = input_lengths + i * local_batch_size;
+            const int* input_len_ptr_end = input_len_ptr + local_batch_size;
+            for (; input_len_ptr != input_len_ptr_end; ++input_len_ptr)
+            {
+                const int input_len = *input_len_ptr;
+                if (input_len >= seq_len)
+                {
+                    break;
+                }
+
+                const int* penalties_ptr_seq = penalties_ptr + i * vocab_size * kNumPenalties;
+                const int* output_ids_ptr_seq = output_ids_ptr + i * seq_len;
+                for (int j = input_len; j < seq_len; ++j)
+                {
+                    const int id = output_ids_ptr_seq[j];
+                    const float penalty = penalties_ptr_seq[id * kNumPenalties + kPenaltyIndex];
+                    logits[id * seq_len + j] -= penalty;
+                }
+            }
+        }
+    }
+    else if (penalty_type == RepetitionPenaltyType::kOutputIdPenalty)
+    {
+        // Apply output ID penalty
+        for (int i = 0; i < batch_size; ++i)
 
