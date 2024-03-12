@@ -29,9 +29,13 @@ auto constexpr kSizePerHead = 144;
 namespace mmha
 {
 
-INSTANTIATE_MMHA_LAUNCHERS(uint16_t, kSizePerHead)
-
-} // namespace mmha
-
-} // namespace kernels
-} // namespace tensorrt_llm
+template <typename T>
+void launchDecoderMaskedMultiheadAttention(const T* input_query, const T* input_key, const T* input_value,
+                                           const T* input_mask, const T* input_bias, const T* input_scale,
+                                           const T* input_zero_point, const int64_t* input_shape,
+                                           const int64_t* input_strides, const int64_t* input_batch_strides,
+                                           const int64_t* input_head_strides, const int64_t* input_seq_strides,
+                                           const int64_t* input_seq_batch_strides, const int64_t* input_seq_head_strides,
+                                           const int64_t* input_seq_head_batch_strides, T* output_query,
+                                           T* output_key, T* output_value, const int64_t* output_shape,
+                                           const int64_t* output_strides, const int64
