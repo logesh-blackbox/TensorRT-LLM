@@ -48,16 +48,14 @@ public:
     virtual ~MHARunner() = default;
 
     virtual void setup(const int b, const int s, const int total_seqlen, const bool has_alibi = false,
-        const bool scale_alibi = false, const int tp_size = 1, const int tp_rank = 0)
-        = 0;
+        const bool scale_alibi = false, const int tp_size = 1, const int tp_rank = 0) = 0;
 
     static bool fmha_supported(const int headSize, const int sm);
 
     virtual bool fmha_supported() = 0;
 
     virtual void setup_flags(const bool force_fp32_acc, const bool is_s_padded, const bool causal_mask,
-        const int num_kv_heads /* MQA or GQA */)
-        = 0;
+        const int num_kv_heads /* MQA or GQA */) = 0;
 
     virtual void run(const void* input, const void* cu_seqlens, void* output, cudaStream_t stream) = 0;
 
