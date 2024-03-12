@@ -56,14 +56,12 @@ class BertEmbedding(Module):
         seq_len_2d = concat([1, shape(input_ids, 1)])
 
         if position_ids is None:
-            # slice
             position_ids = slice(position_ids_buffer,
                                  starts=[0, 0],
                                  sizes=seq_len_2d)
             position_ids = expand(position_ids, shape(input_ids))
 
         if token_type_ids is None:
-            # slice
             token_type_ids = slice(token_type_ids_buffer,
                                    starts=[0, 0],
                                    sizes=seq_len_2d)
@@ -115,22 +113,20 @@ class BertAttention(Module):
                                      self.num_attention_heads,
                                      self.attention_head_size, 1.0)
         else:
-
-            def transpose_for_scores(x):
-                new_x_shape = concat([
-                    shape(x, 0),
-                    shape(x, 1), self.num_attention_heads,
-                    self.attention_head_size
-                ])
-                return x.view(new_x_shape).permute([0, 2, 1, 3])
-
             query, key, value = split(qkv, self.hidden_size, dim=2)
-            query = transpose_for_scores(query)
-            key = transpose_for_scores(key)
-            value = transpose_for_scores(value)
+            query = query.permute([0, 2, 1, 3])
+            key = key.permute([0, 2, 1, 3])
+            value = value.permute([0, 2, 1, 3])
 
-            key = key.permute([0, 1, 3, 2])
-            attention_scores = matmul(query, key)
+            attention_scores = matmul(query, key.transpose(-1, -2))
             attention_scores = attention_scores / self.norm_factor
 
-            if attention_mask is not
+            if attention_mask is not None:
+                attention_scores = attention_scores + attention_mask
+
+            attention_probs = softmax(attention_scores, axis=-1)
+
+            context = matmul(attention_probs, value)
+            context = context.permute([0, 2, 1, 3])
+
+        output = self.dense(
