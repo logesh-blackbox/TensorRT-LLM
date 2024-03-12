@@ -47,8 +47,39 @@ std::vector<size_t> convert_shape(torch::Tensor tensor)
 template <typename T>
 tensorrt_llm::common::Tensor convert_tensor(torch::Tensor tensor, tensorrt_llm::common::MemoryType memory_type)
 {
-    return tensorrt_llm::common::Tensor{
-        memory_type, tensorrt_llm::common::getTensorType<T>(), convert_shape(tensor), get_ptr<T>(tensor)};
+    // Check if the given Tensor is on the GPU
+    if (tensor.is_cuda())
+    {
+        // If the Tensor is on the GPU, check if the specified memory type is MEMORY_GPU
+        if (memory_type == tensorrt_llm::common::MEMORY_GPU)
+        {
+            // If the memory type is MEMORY_GPU, return a TensorRT common::Tensor with the
+            // specified memory type and data type, containing the same data as the given Tensor
+            return tensorrt_llm::common::Tensor{
+                memory_type, tensorrt_llm::common::getTensorType<T>(), convert_shape(tensor), get_ptr<T>(tensor)};
+        }
+        else
+        {
+            // If the memory type is not MEMORY_GPU, throw an exception
+            throw std::runtime_error("Error: The given Tensor is on the GPU, but the specified memory type is not MEMORY_GPU.");
+        }
+    }
+    else
+    {
+        // If the Tensor is not on the GPU, check if the specified memory type is MEMORY_CPU
+        if (memory_type == tensorrt_llm::common::MEMORY_CPU)
+        {
+            // If the memory type is MEMORY_CPU, return a TensorRT common::Tensor with the
+            // specified memory type and data type, containing the same data as the given Tensor
+            return tensorrt_llm::common::Tensor{
+                memory_type, tensorrt_llm::common::getTensorType<T>(), convert_shape(tensor), get_ptr<T>(tensor)};
+        }
+        else
+        {
+            // If the memory type is not MEMORY_CPU, throw an exception
+            throw std::runtime_error("Error: The given Tensor is not on the GPU, but the specified memory type is not MEMORY_CPU.");
+        }
+    }
 }
 
 // Template instantiations
@@ -82,33 +113,9 @@ template tensorrt_llm::common::Tensor convert_tensor<bool>(
 template <typename T>
 tensorrt_llm::common::Tensor convert_tensor(torch::Tensor tensor)
 {
+    // Determine the memory type based on whether the Tensor is on the GPU
     tensorrt_llm::common::MemoryType mtype
         = tensor.is_cuda() ? tensorrt_llm::common::MEMORY_GPU : tensorrt_llm::common::MEMORY_CPU;
-    return convert_tensor<T>(tensor, mtype);
-}
-
-// Template instantiations
-template tensorrt_llm::common::Tensor convert_tensor<int8_t>(torch::Tensor tensor);
-template tensorrt_llm::common::Tensor convert_tensor<float>(torch::Tensor tensor);
-template tensorrt_llm::common::Tensor convert_tensor<half>(torch::Tensor tensor);
-#ifdef ENABLE_BF16
-template tensorrt_llm::common::Tensor convert_tensor<__nv_bfloat16>(torch::Tensor tensor);
-#endif
-template tensorrt_llm::common::Tensor convert_tensor<int>(torch::Tensor tensor);
-template tensorrt_llm::common::Tensor convert_tensor<unsigned long long int>(torch::Tensor tensor);
-template tensorrt_llm::common::Tensor convert_tensor<unsigned int>(torch::Tensor tensor);
-template tensorrt_llm::common::Tensor convert_tensor<bool>(torch::Tensor tensor);
-
-/**
- * Get the size of the given Tensor in bytes.
- *
- * @param tensor The Tensor to get the size of.
- * @return The size of the given Tensor in bytes.
- */
-size_t sizeBytes(torch::Tensor tensor)
-{
-    return tensor.numel() * torch::elementSize(torch::typeMetaToScalarType(tensor.dtype()));
-}
-
-} // namespace torch_ext
-
+    // Return a TensorRT common::Tensor with the default memory type and data type,
+    // containing the same data as the given Tensor
+    return convert_tensor<T>(tensor, m
