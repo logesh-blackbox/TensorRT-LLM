@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -14,68 +13,82 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
+import os
+import sys
+import pathlib
+import numpy as np
+import csv
+import argparse
 
 import run
 
 
 def generate_output(engine: str,
-                    num_beams: int,
-                    output_name: str,
-                    max_output_len: int = 8):
-    tp_size = 1
-    pp_size = 1
-    model = 'gpt2'
-    resources_dir = Path(__file__).parent.resolve().parent
-    models_dir = resources_dir / 'models'
-    tp_pp_dir = 'tp' + str(tp_size) + '-pp' + str(pp_size) + '-gpu/'
-    engine_dir = models_dir / 'rt_engine' / model / engine / tp_pp_dir
+                    input_file: str,
+                    tokenizer_path: str,
+                    output_npy: str,
+                    output_csv: str,
+                    max_output_len: int = 8,
+                    num_beams: int = 1):
+    """
+    Generate output using the specified engine, input file, tokenizer path,
+    output NPY file, output CSV file, maximum output length, and number of beams.
 
-    data_dir = resources_dir / 'data'
-    input_file = data_dir / 'input_tokens.npy'
-    model_data_dir = data_dir / model
-    if num_beams <= 1:
-        output_dir = model_data_dir / 'sampling'
-    else:
-        output_dir = model_data_dir / ('beam_search_' + str(num_beams))
+    Args:
+        engine (str): The engine to use for generation.
+        input_file (str): The path to the input file.
+        tokenizer_path (str): The path to the tokenizer.
+        output_npy (str): The path to the output NPY file.
+        output_csv (str): The path to the output CSV file.
+        max_output_len (int, optional): The maximum output length. Defaults to 8.
+        num_beams (int, optional): The number of beams. Defaults to 1.
+    """
+    engine_dir = os.path.join(
+        pathlib.Path(__file__).parent.resolve().parent,
+        'models',
+        'rt_engine',
+        'gpt2',
+        engine,
+        'tp1-pp1-gpu'
+    )
 
-    output_name += '_tp' + str(tp_size) + '_pp' + str(pp_size)
-
-    run.generate(engine_dir=str(engine_dir),
-                 input_file=str(input_file),
-                 tokenizer_path=str(models_dir / model),
-                 output_npy=str(output_dir / (output_name + '.npy')),
-                 output_csv=str(output_dir / (output_name + '.csv')),
+    run.generate(engine_dir=engine_dir,
+                 input_file=input_file,
+                 tokenizer_path=tokenizer_path,
+                 output_npy=output_npy,
+                 output_csv=output_csv,
                  max_output_len=max_output_len,
                  num_beams=num_beams)
 
 
 def generate_outputs(num_beams):
+    """
+    Generate GPT2 FP32 and FP16 outputs with the specified number of beams.
+
+    Args:
+        num_beams (int): The number of beams.
+    """
     print('Generating GPT2 FP32 outputs')
     if num_beams == 1:
         generate_output(engine='fp32-default',
-                        num_beams=num_beams,
-                        output_name='output_tokens_fp32')
+                        input_file=str(pathlib.Path(__file__).parent / 'data' / 'input_tokens.npy'),
+                        tokenizer_path=str(pathlib.Path(__file__).parent / 'models' / 'gpt2'),
+                        output_npy=str(pathlib.Path(__file__).parent / 'data' / 'gpt2' / 'sampling' / 'output_tokens_fp32.npy'),
+                        output_csv=str(pathlib.Path(__file__).parent / 'data' / 'gpt2' / 'sampling' / 'output_tokens_fp32.csv'),
+                        max_output_len=8,
+                        num_beams=num_beams)
     generate_output(engine='fp32-plugin',
-                    num_beams=num_beams,
-                    output_name='output_tokens_fp32_plugin')
+                    input_file=str(pathlib.Path(__file__).parent / 'data' / 'input_tokens.npy'),
+                    tokenizer_path=str(pathlib.Path(__file__).parent / 'models' / 'gpt2'),
+                    output_npy=str(pathlib.Path(__file__).parent / 'data' / 'gpt2' / 'output_tokens_fp32_plugin.npy'),
+                    output_csv=str(pathlib.Path(__file__).parent / 'data' / 'gpt2' / 'output_tokens_fp32_plugin.csv'),
+                    max_output_len=8,
+                    num_beams=num_beams)
 
     print('Generating GPT2 FP16 outputs')
     if num_beams == 1:
         generate_output(engine='fp16-default',
-                        num_beams=num_beams,
-                        output_name='output_tokens_fp16')
-    generate_output(engine='fp16-plugin',
-                    num_beams=num_beams,
-                    output_name='output_tokens_fp16_plugin')
-    generate_output(engine='fp16-plugin-packed',
-                    num_beams=num_beams,
-                    output_name='output_tokens_fp16_plugin_packed')
-    generate_output(engine='fp16-plugin-packed-paged',
-                    num_beams=num_beams,
-                    output_name='output_tokens_fp16_plugin_packed_paged')
-
-
-if __name__ == '__main__':
-    generate_outputs(num_beams=1)
-    generate_outputs(num_beams=2)
+                        input_file=str(pathlib.Path(__file__).parent / 'data' / 'input_tokens.npy'),
+                        tokenizer_path=str(pathlib.Path(__file__).parent / 'models' / 'gpt2'),
+                        output_npy=str(pathlib.Path(__file__).parent / 'data' / 'gpt2' / 'beam_search_1' / 'output_tokens_fp16.npy'),
+                
