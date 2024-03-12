@@ -46,4 +46,5 @@ repos:
         types_or: [c++, c, cuda]
         exclude: |
             (?x)^(
-               
+                # Exclude the cubin files
+                cpp/tensorrt_llm/kernels/contextF
