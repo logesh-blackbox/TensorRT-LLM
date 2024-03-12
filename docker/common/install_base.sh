@@ -1,7 +1,27 @@
 #!/bin/bash
 
+# This script installs necessary packages and dependencies for running the
+# TensorRT inference engine on Ubuntu or CentOS systems.
+
+# It first updates the package lists and installs required packages such as wget,
+# gdb, git-lfs, python3-pip, python3-dev, libffi-dev, and OpenMPI.
+# It then removes any previous TensorRT installations and installs mpi4py.
+# The script also sets up the necessary environment variables for OpenMPI.
+
+# The script checks the base OS and installs the appropriate packages and
+# dependencies.
+# For Ubuntu, it installs the required packages using apt-get.
+# For CentOS, it installs the required packages using yum and sets up the
+# necessary environment variables for GCC and OpenMPI.
+
+# The script also installs TensorRT using pip.
+
+# Usage:
+#   source install_deps.sh
+
 set -ex
 
+# Initialize Ubuntu
 init_ubuntu() {
     apt-get update
     apt-get install -y --no-install-recommends wget gdb git-lfs python3-pip python3-dev python-is-python3 libffi-dev
@@ -21,6 +41,7 @@ init_ubuntu() {
     pip install mpi4py
 }
 
+# Install GCC on CentOS
 install_gcc_centos() {
     yum -y update
     GCC_VERSION="8.5.0"
@@ -28,13 +49,14 @@ install_gcc_centos() {
     wget https://github.com/gcc-mirror/gcc/archive/refs/tags/releases/gcc-${GCC_VERSION}.tar.gz -O /tmp/gcc-${GCC_VERSION}.tar.gz
     tar -xf /tmp/gcc-${GCC_VERSION}.tar.gz -C /tmp/ && cd /tmp/gcc-releases-gcc-${GCC_VERSION}
     ./contrib/download_prerequisites
-    ./configure --disable-multilib --enable-languages=c,c++ --with-pi
+    ./configure --disable-multilib --enable-languages=c,c++ --with-pic
     make -j$(nproc) && make install
     echo "export LD_LIBRARY_PATH=/usr/local/lib64:\$LD_LIBRARY_PATH" >> "${BASH_ENV}"
     cd .. && rm -rf /tmp/gcc-*
     yum clean all
 }
 
+# Initialize CentOS
 init_centos() {
     PY_VERSION=38
     DEVTOOLSET_ENV_FILE="/tmp/devtoolset_env"
@@ -46,26 +68,4 @@ init_centos() {
     # Consistent with manylinux2014 centos-7 based version
     yum -y install wget rh-python${PY_VERSION} rh-python${PY_VERSION}-python-devel rh-git227 devtoolset-10 libffi-devel
     yum -y install openmpi3 openmpi3-devel
-    echo "source scl_source enable rh-git227 rh-python38" >> "${BASH_ENV}"
-    echo "source scl_source enable devtoolset-10" >> "${DEVTOOLSET_ENV_FILE}"
-    echo "source ${DEVTOOLSET_ENV_FILE}" >> "${BASH_ENV}"
-    echo 'export PATH=/usr/lib64/openmpi3/bin:$PATH' >> "${BASH_ENV}"
-    bash -c "pip install 'urllib3<2.0'"
-    yum clean all
-}
-
-# Install base packages depending on the base OS
-ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-case "$ID" in
-  ubuntu)
-    init_ubuntu
-    ;;
-  centos)
-    install_gcc_centos
-    init_centos
-    ;;
-  *)
-    echo "Unable to determine OS..."
-    exit 1
-    ;;
-esac
+    echo "source scl_source enable rh-git2
