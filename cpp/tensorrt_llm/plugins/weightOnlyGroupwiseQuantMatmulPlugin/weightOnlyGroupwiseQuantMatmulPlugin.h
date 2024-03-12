@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
 #include "tensorrt_llm/common/quantization.h"
@@ -41,13 +42,18 @@ namespace tensorrt_llm::plugins
 using WeightOnlyGemmRunner = tensorrt_llm::kernels::cutlass_kernels::CutlassFpAIntBGemmRunnerInterface;
 using WeightOnlyGemmRunnerPtr = std::shared_ptr<WeightOnlyGemmRunner>;
 
+// WeightOnlyGroupwiseQuantGemmPluginProfiler class
+// This class is responsible for profiling different tactics (configurations) of the groupwise quantized GEMM algorithm.
+// It inherits from the GemmPluginProfiler class, which provides a common interface for profiling GEMM algorithms.
 class WeightOnlyGroupwiseQuantGemmPluginProfiler
     : public GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig, WeightOnlyGemmRunnerPtr,
           GemmIdCore, GemmIdCoreHash>
 {
 public:
+    // Using WeightOnlyGroupwiseQuantGemmPluginProfiler::Config as a type alias for the CutlassGemmConfig type.
     using Config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
 
+    // Setters for the quantization algorithm and group size.
     void setQuantAlgo(int quantAlgo)
     {
         mQuantAlgo = quantAlgo;
@@ -59,10 +65,16 @@ public:
     }
 
 protected:
+    // Implementation of the runTactic method from the GemmPluginProfiler class.
+    // This method runs a specific time-consuming tactic (configuration) of the groupwise quantized GEMM algorithm.
     void runTactic(int m, int n, int k, const Config& tactic, char* workspace, const cudaStream_t& stream) override;
 
+    // Implementation of the computeTmpSize method from the GemmPluginProfiler class.
+    // This method computes the temporary size required for the specified tactic.
     void computeTmpSize(int maxM, int n, int k) override;
 
+    // Implementation of the getTactics method from the GemmPluginProfiler class.
+    // This method returns a vector of tactics (configurations) that can be used for the specified dimensions.
     std::vector<Config> getTactics(int m, int n, int k) const override;
 
 private:
@@ -70,18 +82,27 @@ private:
     int mGroupSize;
 };
 
+// WeightOnlyGroupwiseQuantMatmulPlugin class
+// This class is responsible for implementing the groupwise quantized matrix multiplication plugin.
+// It inherits from the BasePlugin class, which provides a common interface for all plugins.
 class WeightOnlyGroupwiseQuantMatmulPlugin : public BasePlugin
 {
 public:
+    // Using WeightOnlyGroupwiseQuantMatmulPlugin::PluginProfilerPtr as a type alias for the shared_ptr of the
+    // WeightOnlyGroupwiseQuantGemmPluginProfiler class.
     using PluginProfilerPtr = std::shared_ptr<WeightOnlyGroupwiseQuantGemmPluginProfiler>;
 
+    // Default constructor is deleted.
     WeightOnlyGroupwiseQuantMatmulPlugin() = delete;
 
+    // Constructor with parameters.
     WeightOnlyGroupwiseQuantMatmulPlugin(
         nvinfer1::DataType type, int quant_algo, int group_size, const PluginProfilerPtr& profiler);
 
+    // Constructor with serialized data and a custom profiler.
     WeightOnlyGroupwiseQuantMatmulPlugin(const void* data, size_t length, const PluginProfilerPtr& profiler);
 
+    // Destructor.
     ~WeightOnlyGroupwiseQuantMatmulPlugin() override = default;
 
     // IPluginV2DynamicExt Methods
@@ -92,79 +113,4 @@ public:
         int pos, const nvinfer1::PluginTensorDesc* inOut, int nbInputs, int nbOutputs) noexcept override;
     void configurePlugin(const nvinfer1::DynamicPluginTensorDesc* in, int nbInputs,
         const nvinfer1::DynamicPluginTensorDesc* out, int nbOutputs) noexcept override;
-    size_t getWorkspaceSize(const nvinfer1::PluginTensorDesc* inputs, int nbInputs,
-        const nvinfer1::PluginTensorDesc* outputs, int nbOutputs) const noexcept override;
-    int enqueue(const nvinfer1::PluginTensorDesc* inputDesc, const nvinfer1::PluginTensorDesc* outputDesc,
-        const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream) noexcept override;
-
-    // IPluginV2Ext Methods
-    nvinfer1::DataType getOutputDataType(
-        int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
-
-    // IPluginV2 Methods
-    const char* getPluginType() const noexcept override;
-    const char* getPluginVersion() const noexcept override;
-    int getNbOutputs() const noexcept override;
-    int initialize() noexcept override;
-    void terminate() noexcept override;
-    size_t getSerializationSize() const noexcept override;
-    void serialize(void* buffer) const noexcept override;
-    void destroy() noexcept override;
-
-private:
-    // group_size: 64, 128
-    void init(nvinfer1::DataType type, int quant_algo, int group_size);
-
-    void configGemm();
-
-private:
-    const std::string mLayerName;
-
-    WeightOnlyGemmRunnerPtr m_weightOnlyGroupwiseGemmRunner;
-    size_t m_workspaceMaxSize;
-    nvinfer1::DataType mType;
-    bool mCudaKernelEnabled;
-
-    // When M is smaller than this value, we trigger a fast path
-    // I.e. a tailored kernel instead of cutlass.
-    static constexpr int SMALL_M_FAST_PATH = 5;
-
-    int mQuantAlgo;
-
-    int mGroupSize;
-
-    int mPreQuantScaleInputIdx;
-    int mWeightInputIdx;
-    int mScalesInputIdx;
-    int mZerosInputIdx;
-    int mBiasesInputIdx;
-
-    GemmDims mDims{};
-    GemmIdCore mGemmId{};
-
-    PluginProfilerPtr mPluginProfiler;
-};
-
-class WeightOnlyGroupwiseQuantMatmulPluginCreator : public BaseCreator
-{
-public:
-    WeightOnlyGroupwiseQuantMatmulPluginCreator();
-
-    const char* getPluginName() const noexcept override;
-
-    const char* getPluginVersion() const noexcept override;
-
-    const nvinfer1::PluginFieldCollection* getFieldNames() noexcept override;
-
-    nvinfer1::IPluginV2* createPlugin(const char* name, const nvinfer1::PluginFieldCollection* fc) noexcept override;
-
-    nvinfer1::IPluginV2* deserializePlugin(
-        const char* name, const void* serialData, size_t serialLength) noexcept override;
-
-private:
-    GemmPluginProfilerManager<WeightOnlyGroupwiseQuantGemmPluginProfiler> gemmPluginProfileManager;
-    static nvinfer1::PluginFieldCollection mFC;
-    static std::vector<nvinfer1::PluginField> mPluginAttributes;
-};
-
-} // namespace tensorrt_llm::plugins
+    size_t getWorkspaceSize(const nvinfer1::
