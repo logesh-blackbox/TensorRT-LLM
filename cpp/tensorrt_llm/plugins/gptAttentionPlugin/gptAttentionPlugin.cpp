@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "gptAttentionPlugin.h"
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention.h"
 #include "tensorrt_llm/kernels/gptKernels.h"
@@ -88,4 +89,15 @@ public:
 
     // GetOutputDataType method for GPTAttentionPlugin
     // This method returns the data type of the specified output.
-    nvinfer1::DataType getOutput
+    nvinfer1::DataType getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
+
+private:
+    int num_heads_;
+    int num_kv_heads_;
+    int head_size_;
+    int unidirectional_;
+    float q_scaling_;
+    PositionEmbeddingType position_embedding_type_;
+    int rotary_embedding_dim_;
+    float rotary_embedding_base_;
+   
