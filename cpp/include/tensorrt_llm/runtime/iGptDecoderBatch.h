@@ -24,7 +24,7 @@
 
 #include <cstdint>
 #include <memory>
-#include <utility>
+#include <optional>
 #include <vector>
 
 namespace tensorrt_llm::runtime
@@ -42,6 +42,7 @@ public:
         : ids{std::move(ids)}
         , maxNewTokens{maxNewTokens}
         , endId{endId}
+        , padId{padId}
     {
     }
 
@@ -51,6 +52,7 @@ public:
     // optional parameters
     std::optional<SizeType> maxNewTokens; // maximum number of tokens to generate for this request
     std::optional<SizeType> endId;        // end token id
+    std::optional<SizeType> padId;        // pad token id
     TensorPtr embeddingBias;              // [vocabSizePadded], on gpu
     TensorPtr badWordsList;               // [2, badWordsLength], on gpu
     TensorPtr stopWordsList;              // [2, stopWordsLength], on gpu
@@ -106,8 +108,7 @@ public:
 
     //! @brief Initialize the decoder at `batchIdx` with a new `request`.
     virtual void newRequest(
-        SizeType batchIdx, decoder_batch::Request const& request, SamplingConfig const& samplingConfig)
-        = 0;
+        SizeType batchIdx, decoder_batch::Request const& request, SamplingConfig const& samplingConfig) = 0;
 
     //! @brief Run one step for all requests without blocking the host process and return the token for synchronization.
     virtual TokenPtr forwardAsync(decoder_batch::Output& output, decoder_batch::Input const& input) = 0;
@@ -137,18 +138,4 @@ public:
     //! @returns [batchSize, beamWidth], total sequence lengths (per beam), on gpu
     virtual TensorPtr getOutputLengths() const = 0;
 
-    //! @returns [batchSize (actual)], marks finished requests (per batch)
-    virtual std::vector<bool> getFinished() const = 0;
-
-    //! @returns [batchSize, beamWidth], cumulative log probabilities (per beam), on gpu
-    virtual TensorPtr getCumLogProbs() const = 0;
-
-    virtual TensorPtr getParentIds() const = 0;
-
-    virtual std::vector<SizeType> getNbSteps() const = 0;
-
-protected:
-    IGptDecoderBatch() = default;
-};
-
-} // namespace tensorrt_llm::runtime
+    //! @returns [batchSize (actual)], marks finished requests (per
