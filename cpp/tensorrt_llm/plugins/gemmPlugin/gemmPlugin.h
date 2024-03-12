@@ -16,6 +16,7 @@
  */
 #ifndef TRT_GEMM_PLUGIN_H
 #define TRT_GEMM_PLUGIN_H
+
 #include "tensorrt_llm/common/cublasMMWrapper.h"
 #include "tensorrt_llm/plugins/common/gemmPluginProfiler.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
@@ -35,6 +36,8 @@ class CublasLtGemmPluginProfiler
 {
 public:
     using Config = cublasLtMatmulHeuristicResult_t;
+
+    CublasLtGemmPluginProfiler() = default;
 
     void setTranspose(bool transposeA, bool transposeB)
     {
@@ -104,14 +107,12 @@ private:
     void setGemmConfig();
 
 private:
-    const std::string mLayerName;
+    std::string mLayerName;
 
     int mTransA;
     int mTransB;
     nvinfer1::DataType mType;
 
-    // @fixme: seems this is shared across multiple clones.
-    // If we deep copy the wrapper inside clone(), then we may avoid the mutex inside the wrapper?
     CublasGemmWrapperPtr mCublasWrapper;
 
     GemmDims mDims{};
@@ -132,17 +133,4 @@ public:
 
     const nvinfer1::PluginFieldCollection* getFieldNames() noexcept override;
 
-    nvinfer1::IPluginV2* createPlugin(const char* name, const nvinfer1::PluginFieldCollection* fc) noexcept override;
-
-    nvinfer1::IPluginV2* deserializePlugin(
-        const char* name, const void* serialData, size_t serialLength) noexcept override;
-
-private:
-    GemmPluginProfilerManager<CublasLtGemmPluginProfiler> gemmPluginProfileManager;
-    static nvinfer1::PluginFieldCollection mFC;
-    static std::vector<nvinfer1::PluginField> mPluginAttributes;
-};
-
-} // namespace tensorrt_llm::plugins
-
-#endif // TRT_GEMM_PLUGIN_H
+    nvinfer1::IPluginV2* createPlugin(const char* name, const nvinfer
