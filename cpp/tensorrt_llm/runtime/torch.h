@@ -20,6 +20,7 @@
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/cudaStream.h"
 #include "tensorrt_llm/runtime/iTensor.h"
+#include "tensorrt_llm/runtime/iBuffer.h"
 #include "tensorrt_llm/runtime/torchUtils.h"
 
 #include <ATen/ATen.h>
@@ -32,13 +33,22 @@ namespace tensorrt_llm::runtime
 class Torch
 {
 public:
-    static at::Tensor tensor(ITensor::SharedPtr tensor)
+    /**
+     * Converts an ITensor to an ATen Tensor.
+     *
+     * @param tensor The ITensor to convert.
+     * @return The ATen Tensor equivalent to the input ITensor.
+     */
+    static at::Tensor tensor(ITensor::SharedPtr<void> tensor)
     {
+        // Extract tensor properties
         auto const tensorOptions = at::device(TorchUtils::device((*tensor).data()))
                                        .pinned_memory((*tensor).getMemoryType() == MemoryType::kPINNED)
                                        .dtype(TorchUtils::dataType((*tensor).getDataType()))
                                        .layout(at::kStrided);
-        return at::for_blob(tensor->data(), TorchUtils::shape(tensor->getShape())) // NOLINT(*-use-after-move)
+
+        // Create a Tensor for the given data
+        return at::for_blob(tensor->data(), TorchUtils::shape((*tensor).getShape())) // NOLINT(*-use-after-move)
             .options(tensorOptions)
             .deleter(
                 [ptr = std::move(tensor)](void* data) mutable
@@ -56,12 +66,24 @@ public:
             .make_tensor();
     }
 
-    static at::Tensor buffer(IBuffer::SharedPtr buffer)
+    /**
+     * Converts an IBuffer to an ATen Tensor.
+     *
+     * @param buffer The IBuffer to convert.
+     * @return The ATen Tensor equivalent to the input IBuffer.
+     */
+    static at::Tensor buffer(IBuffer::SharedPtr<void> buffer)
     {
+        // Create a Tensor for the given data
         auto const shape = ITensor::makeShape({static_cast<runtime::SizeType>(buffer->getSize())});
-        return tensor(ITensor::view(std::move(buffer), shape));
+        return tensor(IBuffer::view(std::move(buffer), shape));
     }
 
+    /**
+     * Sets the current CUDA stream for ATen.
+     *
+     * @param cudaStream The CudaStream to set as the current stream.
+     */
     static void setCurrentStream(runtime::CudaStream& cudaStream)
     {
         at::cuda::setCurrentCUDAStream(TorchUtils::stream(cudaStream));
@@ -72,3 +94,4 @@ private:
 };
 
 } // namespace tensorrt_llm::runtime
+
