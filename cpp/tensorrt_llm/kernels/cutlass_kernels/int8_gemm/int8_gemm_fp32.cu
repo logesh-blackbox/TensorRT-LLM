@@ -23,8 +23,14 @@ namespace kernels
 namespace cutlass_kernels
 {
 
-template class CutlassInt8GemmRunner<float>; // for compilation only
+// Forward declaration
+template <typename scalar_type>
+class CutlassInt8GemmRunner;
+
+// Instantiation for float
+template class CutlassInt8GemmRunner<float>;
 
 } // namespace cutlass_kernels
 } // namespace kernels
 } // namespace tensorrt_llm
+
