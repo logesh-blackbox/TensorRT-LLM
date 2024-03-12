@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
 #include "tensorrt_llm/common/mpiUtils.h"
@@ -30,10 +31,13 @@ namespace tensorrt_llm::plugins
 class RecvPlugin : public BasePlugin
 {
 public:
+    // Constructor for RecvPlugin with srcRank and data type
     RecvPlugin(int srcRank, nvinfer1::DataType type);
 
+    // Constructor for RecvPlugin from serialized data
     RecvPlugin(const void* data, size_t length);
 
+    // Destructor
     ~RecvPlugin() override = default;
 
     // IPluginV2DynamicExt Methods
@@ -49,7 +53,7 @@ public:
     int enqueue(const nvinfer1::PluginTensorDesc* inputDesc, const nvinfer1::PluginTensorDesc* outputDesc,
         const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream) noexcept override;
 
-    // IPluginV2Ext Methods
+    // IPluginV2DynamicExt Methods
     nvinfer1::DataType getOutputDataType(
         int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
 
@@ -91,3 +95,4 @@ private:
 };
 
 } // namespace tensorrt_llm::plugins
+
