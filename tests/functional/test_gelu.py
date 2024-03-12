@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import unittest
-
 import numpy as np
 import torch
 from parameterized import parameterized
@@ -73,3 +72,4 @@ class TestFunctional(unittest.TestCase):
         np.testing.assert_allclose(ref.cpu().numpy(),
                                    outputs['output'],
                                    atol=1e-3)
+
