@@ -51,3 +51,4 @@
         }                                                                                                              \
     } while (0)
 #endif // ENABLE_MULTI_DEVICE
+
