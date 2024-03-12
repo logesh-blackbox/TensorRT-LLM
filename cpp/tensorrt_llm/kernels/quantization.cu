@@ -108,33 +108,3 @@ __global__ void perTokenQuantization(
         scalePtr[blockIdx.x] = rowMax / 127.f;
     }
 
-    const float scaleOrigQuant = 127.f / rowMax;
-    for (int i = threadIdx.x; i < numCols; i += blockDim.x)
-    {
-        dstRow[i] = cuda_cast<int8_t>(cuda_cast<float>(srcRow[i]) * scaleOrigQuant);
-    }
-}
-
-template <typename T>
-void invokePerTokenQuantization(
-    int8_t* dst, const T* src, const int64_t numRows, const int64_t numCols, float* scalePtr, cudaStream_t stream)
-{
-    // each block is responsible for a single row
-    const dim3 block(512);
-    const dim3 grid(numRows);
-
-    perTokenQuantization<<<grid, block, 0, stream>>>(dst, src, numRows, numCols, scalePtr);
-}
-
-#define INSTANTIATE_INVOKE_PER_TOKEN_QUANTIZATION(T)                                                                   \
-    template void invokePerTokenQuantization(                                                                          \
-        int8_t* dst, const T* src, const int64_t numRows, const int64_t numCols, float* scalePtr, cudaStream_t stream)
-
-INSTANTIATE_INVOKE_PER_TOKEN_QUANTIZATION(float);
-INSTANTIATE_INVOKE_PER_TOKEN_QUANTIZATION(half);
-#ifdef ENABLE_BF16
-INSTANTIATE_INVOKE_PER_TOKEN_QUANTIZATION(__nv_bfloat16);
-#endif
-
-} // namespace kernels
-} // namespace tensorrt_llm
