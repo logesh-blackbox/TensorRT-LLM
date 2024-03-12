@@ -22,7 +22,11 @@ namespace kernels
 {
 namespace cutlass_kernels
 {
+
+// Specialize the template for the given types.
 template class CutlassFpAIntBGemmRunner<half, uint8_t, cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS>;
+
 } // namespace cutlass_kernels
 } // namespace kernels
 } // namespace tensorrt_llm
+
