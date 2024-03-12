@@ -16,9 +16,7 @@
 
 #pragma once
 
-// We don't want to include cublas_api.h. It contains the CUBLAS_VER_* macro
-// definition which is not sufficient to determine if we include cublas.h,
-// cublas_v2.h or cublasLt.h.
+#include <cuda_runtime.h>
 
 #define TLLM_CUBLAS_VERSION_CALC(MAJOR, MINOR, PATCH) (MAJOR * 10000 + MINOR * 100 + PATCH)
 #define TLLM_CUBLAS_VER_LE(MAJOR, MINOR, PATCH)                                                                        \
@@ -33,3 +31,15 @@
 #define TLLM_CUBLAS_VER_GT(MAJOR, MINOR, PATCH)                                                                        \
     TLLM_CUBLAS_VERSION_CALC(CUBLAS_VER_MAJOR, CUBLAS_VER_MINOR, CUBLAS_VER_PATCH)                                     \
         > TLLM_CUBLAS_VERSION_CALC(MAJOR, MINOR, PATCH)
+
+#if CUDA_VERSION >= 11030
+#define TLLM_CUBLAS_API_VERSION 11
+#elif CUDA_VERSION >= 11000
+#define TLLM_CUBLAS_API_VERSION 11
+#elif CUDA_VERSION >= 10200
+#define TLLM_CUBLAS_API_VERSION 10
+#elif CUDA_VERSION >= 10100
+#define TLLM_CUBLAS_API_VERSION 10
+#elif CUDA_VERSION >= 9200
+#define TLLM_CUBLAS_API_VERSION 9
+#elif CUDA_VERSION >=
