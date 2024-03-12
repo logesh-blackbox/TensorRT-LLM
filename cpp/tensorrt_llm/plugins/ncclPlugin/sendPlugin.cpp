@@ -135,5 +135,4 @@ nvinfer1::IPluginV2DynamicExt* SendPlugin::clone() const noexcept
     return plugin;
 }
 
-nvinfer1::DimsExprs SendPlugin::getOutputDimensions(
-    int outputIndex, const
+nvinfer1::DimsExprs SendPlugin::getOutput
