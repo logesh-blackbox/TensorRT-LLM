@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cuda_runtime.h>
 #include "onlineSoftmaxBeamsearchKernelsTemplate.h"
 
 namespace tensorrt_llm
@@ -26,3 +27,4 @@ INSTANTIATE_BEAMSEARCH_K(half, 8);
 
 } // namespace kernels
 } // namespace tensorrt_llm
+
