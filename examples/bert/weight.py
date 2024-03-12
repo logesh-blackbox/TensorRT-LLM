@@ -12,9 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import numpy as np
 import torch
-
 
 def extract_layer_idx(name):
     ss = name.split('.')
@@ -22,7 +22,6 @@ def extract_layer_idx(name):
         if s.isdigit():
             return s
     return None
-
 
 def split(v, tp_size, idx, dim=0):
     if tp_size == 1:
@@ -33,13 +32,23 @@ def split(v, tp_size, idx, dim=0):
         return np.ascontiguousarray(np.split(v, tp_size, axis=dim)[idx])
     return None
 
-
 def load_from_hf_bert(tensorrt_llm_bert,
                       hf_bert,
                       hf_bert_config,
                       rank=0,
                       tensor_parallel=1,
                       fp16=False):
+    """
+    Loads the weights from a Hugging Face BERT model to a TensorRT LLM BERT model.
+
+    Args:
+    tensorrt_llm_bert (TensorRTLLM): The TensorRT LLM BERT model to load the weights into.
+    hf_bert (HuggingFaceBERT): The Hugging Face BERT model to load the weights from.
+    hf_bert_config (HuggingFaceBERTConfig): The configuration of the Hugging Face BERT model.
+    rank (int, optional): The rank of the current process. Defaults to 0.
+    tensor_parallel (int, optional): The number of tensor parallel processes. Defaults to 1.
+    fp16 (bool, optional): Whether to use float16 precision. Defaults to False.
+    """
     qkv_weight = [[None, None, None]
                   for _ in range(hf_bert_config.num_hidden_layers)]
 
@@ -94,36 +103,4 @@ def load_from_hf_bert(tensorrt_llm_bert,
             elif 'attention.self.query.weight' in k:
                 qkv_weight[idx][0] = v
             elif 'attention.self.query.bias' in k:
-                qkv_bias[idx][0] = v
-            elif 'attention.self.key.weight' in k:
-                qkv_weight[idx][1] = v
-            elif 'attention.self.key.bias' in k:
-                qkv_bias[idx][1] = v
-            elif 'attention.self.value.weight' in k:
-                qkv_weight[idx][2] = v
-            elif 'attention.self.value.bias' in k:
-                qkv_bias[idx][2] = v
-
-    for i in range(hf_bert_config.num_hidden_layers):
-        tensorrt_llm_bert.layers[i].attention.qkv.weight.value = split(
-            np.concatenate(qkv_weight[i]), tensor_parallel, rank)
-        tensorrt_llm_bert.layers[i].attention.qkv.bias.value = split(
-            np.concatenate(qkv_bias[i]), tensor_parallel, rank)
-
-
-def load_from_hf_qa_bert(tensorrt_llm_qa_bert,
-                         hf_qa_bert,
-                         hf_bert_config,
-                         rank=0,
-                         tensor_parallel=1,
-                         fp16=False):
-    load_from_hf_bert(tensorrt_llm_qa_bert.bert, hf_qa_bert, hf_bert_config,
-                      rank, tensor_parallel, fp16)
-    states = hf_qa_bert.state_dict()
-
-    torch_dtype = torch.float16 if fp16 else torch.float32
-
-    tensorrt_llm_qa_bert.qa_outputs.weight.value = states[
-        'qa_outputs.weight'].to(torch_dtype).cpu().numpy()
-    tensorrt_llm_qa_bert.qa_outputs.bias.value = states['qa_outputs.bias'].to(
-        torch_dtype).cpu().numpy()
+                qkv_
