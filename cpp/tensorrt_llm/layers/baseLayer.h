@@ -32,7 +32,15 @@ public:
         : stream_(stream)
         , allocator_(allocator)
         , cuda_device_prop_(cuda_device_prop)
-        , is_free_buffer_after_forward_(is_free_buffer_after_forward){};
+        , is_free_buffer_after_forward_(is_free_buffer_after_forward)
+        , is_allocate_buffer_(false) // initialize is_allocate_buffer_ to false
+    {
+        // allocate buffer if is_allocate_buffer_ is true
+        if (is_allocate_buffer_)
+        {
+            // allocate buffer here
+        }
+    };
     virtual ~BaseLayer() = default;
 
     virtual cudaStream_t getStream()
@@ -52,8 +60,11 @@ protected:
     cudaDeviceProp* cuda_device_prop_ = nullptr;
 
     bool is_free_buffer_after_forward_;
-    bool is_allocate_buffer_ = false; // TODO to be deprecated
+    bool is_allocate_buffer_; // rename is_allocate_buffer_ to is_allocate_buffer_
+    // allocate buffer here if is_allocate_buffer_ is true
+    // ...
 };
 
 } // namespace layers
 } // namespace tensorrt_llm
+
