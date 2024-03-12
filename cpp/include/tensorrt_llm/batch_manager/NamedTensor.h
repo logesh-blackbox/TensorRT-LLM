@@ -32,11 +32,11 @@ struct NamedTensor
 
     // Host Tensor constructor
     NamedTensor(
-        nvinfer1::DataType _type, std::vector<int64_t> const& _shape, std::string _name, const void* _data = nullptr);
+        nvinfer1::DataType type, std::vector<int64_t> const& shape, std::string name, const void* data = nullptr);
 
-    NamedTensor(TensorPtr _tensor, std::string _name)
-        : tensor(std::move(_tensor))
-        , name(std::move(_name))
+    NamedTensor(TensorPtr tensor, std::string name)
+        : tensor(std::move(tensor))
+        , name(std::move(name))
     {
     }
 
@@ -44,3 +44,4 @@ struct NamedTensor
     static NamedTensor deserialize(const int64_t* packed);
 };
 } // namespace tensorrt_llm::batch_manager
+
