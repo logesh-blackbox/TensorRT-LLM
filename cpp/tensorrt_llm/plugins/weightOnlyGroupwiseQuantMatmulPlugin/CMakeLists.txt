@@ -7,7 +7,7 @@
 #
 file(GLOB SRCS *.cpp)
 # Add the gathered .cpp files to the PLUGIN_SOURCES list.
-set(PLUGIN_SOURCES ${PLUGIN_SOURCES} ${SRCS})
+set(PLUGIN_SOURCES ${SRCS})
 # Propagate the updated PLUGIN_SOURCES list to the parent scope.
 set(PLUGIN_SOURCES
     ${PLUGIN_SOURCES}
@@ -40,4 +40,19 @@ function(setup_plugin_build)
     # Set the project name and version.
     project(MyPlugin VERSION 1.0.0)
 
-    # Add the source
+    # Add the source files to the project.
+    add_library(MyPlugin ${PLUGIN_SOURCES})
+
+    # Set the plugin type to SHARED.
+    set_target_properties(MyPlugin PROPERTIES
+        PLUGIN_TYPE SHARED
+    )
+
+    # Set the plugin interface.
+    set_target_properties(MyPlugin PROPERTIES
+        PLUGIN_INTERFACE "MyPlugin"
+    )
+
+    # Set the plugin version.
+    set_target_properties(MyPlugin PROPERTIES
+
