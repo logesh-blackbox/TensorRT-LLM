@@ -1,8 +1,44 @@
-models/gpt2
-models/gpt-j-6b
-models/llama-7b-hf
-models/c-model
-models/rt_engine
-/models/v2
-output_*.npy
-data/*.json
+import os
+import sys
+
+def find_models(path):
+    models = []
+    for dirpath, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            if filename.endswith(('.pth', '.bin')):
+                models.append(os.path.join(dirpath, filename))
+    return models
+
+def find_output_files(path):
+    output_files = []
+    for dirpath, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            if filename.startswith('output_') and filename.endswith('.npy'):
+                output_files.append(os.path.join(dirpath, filename))
+    return output_files
+
+def find_data_files(path):
+    data_files = []
+    for dirpath, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            if filename.endswith('.json'):
+                data_files.append(os.path.join(dirpath, filename))
+    return data_files
+
+path = sys.argv[1]
+models = find_models(path)
+output_files = find_output_files(path)
+data_files = find_data_files(path)
+
+print("Models:")
+for model in models:
+    print(model)
+
+print("\nOutput files:")
+for output_file in output_files:
+    print(output_file)
+
+print("\nData files:")
+for data_file in data_files:
+    print(data_file)
+
