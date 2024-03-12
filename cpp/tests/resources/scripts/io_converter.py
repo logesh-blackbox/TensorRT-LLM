@@ -17,9 +17,7 @@
 import argparse
 import csv
 import os
-
 import numpy as np
-
 
 def csv_to_npy(input_file, output_file, pad_id, verbose):
     data = []
@@ -34,13 +32,11 @@ def csv_to_npy(input_file, output_file, pad_id, verbose):
         print(data, data.dtype)
     np.save(output_file, data)
 
-
 def npy_to_csv(input_file, output_file, verbose):
     data = np.load(input_file)
     if (verbose):
         print(data, data.dtype)
     np.savetxt(output_file, data, delimiter=",", fmt='%i')
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
