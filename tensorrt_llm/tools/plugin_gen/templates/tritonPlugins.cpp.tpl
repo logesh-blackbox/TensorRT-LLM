@@ -138,6 +138,7 @@ extern "C"
 {
     bool initLibNvInferPlugins(void* logger, const char* libNamespace)
     {
+        // Register the plugin creators
         {# create the registers for all the plugins #}
         {% for creator in plugin_creators %}
             nvinfer1::initializeTritonPlugin<nvinfer1::plugin::[[ creator ]]>(logger, libNamespace);
@@ -145,3 +146,4 @@ extern "C"
         return true;
     }
 } // extern "C"
+
