@@ -35,22 +35,23 @@ class TestFunctional(unittest.TestCase):
         builder = tensorrt_llm.Builder()
         net = builder.create_network()
         with tensorrt_llm.net_guard(net):
-            network = tensorrt_llm.default_trtnet()
             x = Tensor(name='x',
                        shape=x_data.shape,
                        dtype=tensorrt_llm.str_dtype_to_trt(dtype))
             output = tensorrt_llm.functional.exp(x).trt_tensor
             output.name = 'output'
-            network.mark_output(output)
+            net.mark_output(output)
 
         build_engine = EngineFromNetwork((builder.trt_builder, net.trt_network))
         with TrtRunner(build_engine) as runner:
-            outputs = runner.infer(feed_dict={
+            runner.infer(feed_dict={
                 'x': x_data.numpy(),
             })
+            outputs = runner.get_outputs()
 
         ref = torch.exp(x_data)
         np.testing.assert_allclose(ref.cpu().numpy(),
                                    outputs['output'],
                                    atol=1e-5)
+
 
