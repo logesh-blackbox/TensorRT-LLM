@@ -18,6 +18,15 @@ def apply_smoothing(scales,
                     layernorm_bias=None,
                     dtype=torch.float32,
                     layernorm_1p=False):
+    """
+    Applies smoothing to the given weights using the provided scales.
+    :param scales: The scales to apply to the weights.
+    :param gemm_weights: The weights to apply smoothing to.
+    :param layernorm_weights: The layernorm weights to apply smoothing to.
+    :param layernorm_bias: The layernorm bias to apply smoothing to.
+    :param dtype: The data type to use for the smoothed weights.
+    :param layernorm_1p: Whether to use 1p layernorm smoothing.
+    """
     if not isinstance(gemm_weights, list):
         gemm_weights = [gemm_weights]
 
@@ -41,6 +50,16 @@ def smooth_gemm(gemm_weights,
                 layernorm_bias=None,
                 alpha=0.5,
                 weight_scales=None):
+    """
+    Smooths the given gemm weights using the provided act_scales and alpha value.
+    :param gemm_weights: The weights to smooth.
+    :param act_scales: The activation scales to use for smoothing.
+    :param layernorm_weights: The layernorm weights to smooth.
+    :param layernorm_bias: The layernorm bias to smooth.
+    :param alpha: The alpha value to use for smoothing.
+    :param weight_scales: The weight scales to use for smoothing.
+    :return: The smoothed scales.
+    """
     if not isinstance(gemm_weights, list):
         gemm_weights = [gemm_weights]
     orig_dtype = gemm_weights[0].dtype
@@ -66,6 +85,14 @@ def smooth_gemm(gemm_weights,
 
 @torch.no_grad()
 def smooth_ln_fcs(ln, fcs, act_scales, alpha=0.5):
+    """
+    Smooths the given layernorm and fc weights using the provided act_scales and alpha value.
+    :param ln: The layernorm to smooth.
+    :param fcs: The fcs to smooth.
+    :param act_scales: The activation scales to use for smoothing.
+    :param alpha: The alpha value to use for smoothing.
+    :return: The smoothed scales.
+    """
     if not isinstance(fcs, list):
         fcs = [fcs]
     for fc in fcs:
@@ -96,46 +123,8 @@ def capture_activation_range(model,
                              dataset,
                              num_samples=512,
                              seq_len=512):
-    model.eval()
-    device = next(model.parameters()).device
-    act_scales = defaultdict(lambda: {"x": None, "y": None, "w": None})
-
-    def stat_tensor(name, tensor, act_scales, key):
-        hidden_dim = tensor.shape[-1]
-        tensor = tensor.view(-1, hidden_dim).abs().detach()
-        comming_max = torch.max(tensor, dim=0)[0].float()
-
-        if act_scales[name][key] is None:
-            act_scales[name][key] = comming_max
-        else:
-            act_scales[name][key] = torch.max(act_scales[name][key],
-                                              comming_max)
-
-    def stat_input_hook(m, x, y, name):
-        if isinstance(x, tuple):
-            x = x[0]
-        stat_tensor(name, x, act_scales, "x")
-        stat_tensor(name, y, act_scales, "y")
-
-        if act_scales[name]["w"] is None:
-            act_scales[name]["w"] = m.weight.abs().clip(1e-8,
-                                                        None).max(dim=1)[0]
-
-    hooks = []
-    for name, m in model.named_modules():
-        if isinstance(m, nn.Linear) or isinstance(m, Conv1D):
-            hooks.append(
-                m.register_forward_hook(
-                    functools.partial(stat_input_hook, name=name)))
-
-    for i in tqdm(range(num_samples), desc="calibrating model"):
-        input_ids = tokenizer(dataset[i]["text"],
-                              return_tensors="pt",
-                              max_length=seq_len,
-                              truncation=True).input_ids.to(device)
-        model(input_ids)
-
-    for h in hooks:
-        h.remove()
-
-    return act_scales
+    """
+    Captures the activation range of the given model using the provided tokenizer, dataset, and number of samples.
+    :param model: The model to capture the activation range of.
+    :param tokenizer: The tokenizer to use for processing the dataset.
+    :
