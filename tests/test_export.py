@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import sys
 import unittest
 from pathlib import Path
@@ -39,8 +40,20 @@ def dist(x, y):
 
 
 class TestINT8Export(unittest.TestCase):
+    """
+    Test class for INT8 export functionality.
+
+    This class contains unit tests for the INT8 export functionality, ensuring
+    that the quantization of weights and end-to-end GEMM operations are accurate.
+    """
 
     def setUp(self):
+        """
+        Set up the test environment.
+
+        This method initializes random input data, weights, and ranges for the
+        tests.
+        """
         self.rng = np.random.default_rng(42)
         w = 2 * (self.rng.random([128, 256]) - 0.5)  # weights in [-1, 1]
         x = 10 * (self.rng.random([5, 128]) - 0.5)  # x in [-5, 5]
@@ -57,6 +70,12 @@ class TestINT8Export(unittest.TestCase):
         self.values = values
 
     def test_weight_quantization(self):
+        """
+        Test weight quantization.
+
+        This method tests the quantization of weights by comparing the angle
+        between the original and quantized weights.
+        """
         w_angle = dist(
             self.values["weight.int8"] * self.values["scale_w_quant_orig"],
             self.w)[1]
@@ -69,6 +88,12 @@ class TestINT8Export(unittest.TestCase):
         self.assertTrue(np.abs(w_angle_col) < np.abs(w_angle))
 
     def test_e2e_gemm_quantization(self):
+        """
+        Test end-to-end GEMM quantization.
+
+        This method tests the quantization of end-to-end GEMM operations by
+        comparing the angle between the original and quantized outputs.
+        """
         # mimic what CUTLASS would do
         x_i8 = (self.x * self.values["scale_x_orig_quant"]).round().clip(
             -127, 127)
@@ -80,12 +105,4 @@ class TestINT8Export(unittest.TestCase):
         y_i32_col = x_i8 @ self.values["weight.int8.col"].astype(np.int32)
         y_quant_col = y_i32_col * self.values[
             "scale_y_accum_quant.col"] * self.values["scale_y_quant_orig"]
-        y_angle_col = dist(self.y, y_quant_col)[1]
-
-        self.assertTrue(np.abs(y_angle) < 0.5)
-        self.assertTrue(np.abs(y_angle_col) < 0.5)
-        self.assertTrue(np.abs(y_angle_col) < np.abs(y_angle))
-
-
-if __name__ == '__main__':
-    unittest.main()
+        y_
