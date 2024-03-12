@@ -14,9 +14,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 #
+
+# Add all cpp files to the source list
 file(GLOB SRCS *.cpp)
+
+# Add all cu files to the source list
 file(GLOB CU_SRCS *.cu)
 
+# Create a library from the source files
 add_library(common_src OBJECT ${SRCS} ${CU_SRCS})
+
+# Enable position independent code
 set_property(TARGET common_src PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Enable CUDA resolve device symbols
 set_property(TARGET common_src PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+
