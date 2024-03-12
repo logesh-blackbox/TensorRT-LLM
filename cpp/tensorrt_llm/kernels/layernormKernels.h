@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
+#include <iostream>
 
 namespace tensorrt_llm
 {
@@ -29,7 +30,11 @@ namespace kernels
 template <typename T>
 void invokeGeneralLayerNorm(T* out, const T* input, const T* gamma, const T* beta, const float eps, const int tokens,
     const int hidden_dim, cudaStream_t stream = 0, bool use_diff_of_squares = true, const float* scale = nullptr,
-    float* dynamic_scale = nullptr, int8_t* out_quant = nullptr);
+    float* dynamic_scale = nullptr, int8_t* out_quant = nullptr)
+{
+    std::cout << "invokeGeneralLayerNorm called" << std::endl;
+}
 
 } // namespace kernels
 } // namespace tensorrt_llm
+
