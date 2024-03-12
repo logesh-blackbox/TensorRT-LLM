@@ -29,7 +29,8 @@ void caughtError(const std::exception& e)
 
 void logError(const char* msg, const char* file, const char* fn, int line)
 {
-    TLLM_LOG_ERROR("Parameter check failed at: %s::%s::%d, condition: %s", file, fn, line, msg);
+    TLLM_LOG_ERROR("Parameter check failed at: %s:%d, condition: %s", file, line, msg);
 }
 
 } // namespace tensorrt_llm::plugins
+
