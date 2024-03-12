@@ -137,7 +137,4 @@ template <typename AttentionMaskDataType>
 __global__ void computeAttentionMask(
     AttentionMaskDataType* attentionMask, const int* seqOffsets, int maxSeqLength, AttentionMaskType attentionMaskType)
 {
-    // The index of the sequence in the batch.
-    int batchIdx = blockIdx.y;
-
-    // The number of items in
+    // The
