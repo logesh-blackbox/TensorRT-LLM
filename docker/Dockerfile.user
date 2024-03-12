@@ -1,14 +1,20 @@
+# This Dockerfile uses a base image specified by the BASE_IMAGE_WITH_TAG argument.
+# The USER_ID, USER_NAME, GROUP_ID, and GROUP_NAME arguments are used to create a new user and group with the specified IDs and names.
+# The new user is then set as the default user for the container.
+
 ARG BASE_IMAGE_WITH_TAG
 
 FROM ${BASE_IMAGE_WITH_TAG} as base
 
-# Alternative user
+# Define the user and group IDs and names
 ARG USER_ID=0
 ARG USER_NAME=root
 ARG GROUP_ID=0
 ARG GROUP_NAME=root
 
+# Create the new user and group if they don't already exist
 RUN (getent group ${GROUP_ID} || groupadd --gid ${GROUP_ID} ${GROUP_NAME}) && \
     (getent passwd ${USER_ID} || useradd --gid ${GROUP_ID} --uid ${USER_ID} --create-home --no-log-init --shell /bin/bash ${USER_NAME})
 
+# Set the new user as the default user for the container
 USER ${USER_NAME}
