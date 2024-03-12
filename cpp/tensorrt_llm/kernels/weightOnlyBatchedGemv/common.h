@@ -27,18 +27,19 @@ namespace tensorrt_llm
 {
 namespace kernels
 {
+// Struct representing parameters for weight-only operations
 struct WeightOnlyParams
 {
-    const uint8_t* qweight;
-    const half* scales;
-    const half* zeros;
-    const half* in;
-    const half* bias;
-    half* out;
-    const int m;
-    const int n;
-    const int k;
-    const int group_size;
+    const uint8_t* qweight;     // Pointer to quantized weights
+    const half* scales;         // Scales for quantization
+    const half* zeros;          // Zeros for quantization
+    const half* in;             // Input tensor
+    const half* bias;           // Bias tensor
+    half* out;                  // Output tensor
+    const int m;                // Height of the weight tensor
+    const int n;                // Width of the weight tensor
+    const int k;                // Depth of the weight tensor
+    const int group_size;       // Group size for group-wise operations
 
     WeightOnlyParams(const uint8_t* _qweight, const half* _scales, const half* _zeros, const half* _in,
         const half* _bias, half* _out, const int _m, const int _n, const int _k, const int _group_size)
@@ -55,27 +56,29 @@ struct WeightOnlyParams
     {
     }
 };
+
+// Enum for quantization types
 enum class WeightOnlyQuantType
 {
-    Int4b,
-    Int8b
+    Int4b,    // 4-bit integer quantization
+    Int8b     // 8-bit integer quantization
 };
+
+// Enum for weight-only operation types
 enum class WeightOnlyType
 {
-    PerChannel,
-    GroupWise
+    PerChannel,  // Per-channel quantization
+    GroupWise    // Group-wise quantization
 };
 
+// Struct representing per-channel weight-only operations
 struct WeightOnlyPerChannel;
-template <int GS>
+
+// Struct representing group-wise weight-only operations
+template <int GS>  // GS: group size
 struct WeightOnlyGroupWise;
 
+// Enum for activation types
 enum class WeightOnlyActivationType
 {
-    Gelu,
-    Relu,
-    Identity,
-    InvalidType
-};
-} // namespace kernels
-} // namespace tensorrt_llm
+    Gelu
