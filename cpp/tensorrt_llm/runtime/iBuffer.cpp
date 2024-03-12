@@ -28,8 +28,11 @@ using namespace tensorrt_llm::runtime;
 
 MemoryType IBuffer::memoryType(void const* data)
 {
+    // Check if the provided data is a valid CUDA pointer
     cudaPointerAttributes attributes{};
     TLLM_CUDA_CHECK(::cudaPointerGetAttributes(&attributes, data));
+
+    // Determine the memory type based on the CUDA pointer attributes
     switch (attributes.type)
     {
     case cudaMemoryTypeHost: return MemoryType::kPINNED;
@@ -40,16 +43,23 @@ MemoryType IBuffer::memoryType(void const* data)
     }
 }
 
+// Create a sliced view of an existing IBuffer
 IBuffer::UniquePtr IBuffer::slice(IBuffer::SharedPtr buffer, std::size_t offset, std::size_t size)
 {
+    // Create a new BufferView with the given offset and size
     return std::make_unique<BufferView>(std::move(buffer), offset, size);
 }
 
+// Wrap a given data pointer with an IBuffer
 IBuffer::UniquePtr IBuffer::wrap(void* data, nvinfer1::DataType type, std::size_t size, std::size_t capacity)
 {
+    // Ensure the requested size is within the capacity
     TLLM_CHECK_WITH_INFO(size <= capacity, "Requested size is larger than capacity");
+
+    // Determine the memory type of the provided data
     auto memoryType = IBuffer::memoryType(data);
 
+    // Create a new GenericBuffer with the appropriate allocator
     IBuffer::UniquePtr result;
     auto const capacityInBytes = capacity * BufferDataType(type).getSize();
     switch (memoryType)
@@ -68,13 +78,19 @@ IBuffer::UniquePtr IBuffer::wrap(void* data, nvinfer1::DataType type, std::size_
         break;
     default: TLLM_THROW("Unknown memory type");
     }
+
+    // Resize the buffer to the requested size
     result->resize(size);
     return result;
 }
 
+// Output operator for IBuffer
 std::ostream& tensorrt_llm::runtime::operator<<(std::ostream& output, IBuffer const& buffer)
 {
+    // Get a raw pointer to the data within the IBuffer
     auto data = const_cast<IBuffer&>(buffer).data();
+
+    // Wrap the data in an ITensor and output it
     auto tensor = ITensor::wrap(data, buffer.getDataType(),
         ITensor::makeShape({static_cast<SizeType>(buffer.getSize())}), buffer.getCapacity());
     return output << *tensor;
