@@ -64,3 +64,4 @@ void invokeCopyNextStepIds(int* next_step_ids, int** output_ids_ptr, const int* 
 
 } // namespace kernels
 } // namespace tensorrt_llm
+
