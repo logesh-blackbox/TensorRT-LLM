@@ -2,11 +2,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
 # AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
 #
-# This script is responsible for gathering all .cpp files in the current directory
+# This script is responsible for gathering all .cpp and .cu files in the current directory
 # and adding them to the PLUGIN_SOURCES list.
 #
-file(GLOB SRCS *.cpp)
-# Add the gathered .cpp files to the PLUGIN_SOURCES list.
+file(GLOB SRCS *.cpp *.cu)
+# Add the gathered .cpp and .cu files to the PLUGIN_SOURCES list.
 set(PLUGIN_SOURCES ${PLUGIN_SOURCES} ${SRCS})
 # Propagate the updated PLUGIN_SOURCES list to the parent scope.
 set(PLUGIN_SOURCES
@@ -36,4 +36,9 @@ set(PLUGIN_SOURCES
 #
 file(GLOB SRCS *.cu)
 # Add the gathered .cu files to the PLUGIN_SOURCES list.
-set(PLUGIN_SOURCES ${PLUGIN_SOURCES} ${SR
+set(PLUGIN_SOURCES ${PLUGIN_SOURCES} ${SRCS})
+# Propagate the updated PLUGIN_SOURCES list to the parent scope.
+set(PLUGIN_SOURCES
+    ${PLUGIN_SOURCES}
+    PARENT_SCOPE)
+
