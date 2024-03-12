@@ -33,20 +33,44 @@ def apply_smoothing(scales,
                     layernorm_bias=None,
                     dtype=torch.float32,
                     layernorm_1p=False):
+    """
+    Applies smoothing to the given scales, gemm_weights, layernorm_weights, and
+    layernorm_bias using the specified dtype and layernorm_1p flag.
+
+    Args:
+    scales (torch.Tensor): The scales tensor to be applied to gemm_weights.
+    gemm_weights (list or torch.Tensor): A list of gemm weights or a single
+        gemm weight tensor.
+    layernorm_weights (torch.Tensor, optional): The layernorm weights tensor.
+        Defaults to None.
+    layernorm_bias (torch.Tensor, optional): The layernorm bias tensor.
+        Defaults to None.
+    dtype (torch.dtype, optional): The data type to be used for smoothing
+        operations. Defaults to torch.float32.
+    layernorm_1p (bool, optional): A flag indicating whether to apply 1p
+        normalization. Defaults to False.
+
+    Returns:
+    None
+    """
     if not isinstance(gemm_weights, list):
         gemm_weights = [gemm_weights]
 
+    # Scale the gemm_weights and convert them to the specified dtype
+    for gemm in gemm_weights:
+        gemm.mul_(scales.view(1, -1)).to(dtype)
+
+    # Scale the layernorm_weights and layernorm_bias if provided
     if layernorm_weights is not None:
         assert layernorm_weights.numel() == scales.numel()
         layernorm_weights.div_(scales).to(dtype)
     if layernorm_bias is not None:
         assert layernorm_bias.numel() == scales.numel()
         layernorm_bias.div_(scales).to(dtype)
+
+    # Apply 1p normalization if specified
     if layernorm_1p:
         layernorm_weights += (1 / scales) - 1
-
-    for gemm in gemm_weights:
-        gemm.mul_(scales.view(1, -1)).to(dtype)
 
 
 @torch.no_grad()
@@ -56,23 +80,35 @@ def smooth_gemm(gemm_weights,
                 layernorm_bias=None,
                 alpha=0.5,
                 weight_scales=None):
+    """
+    Smooths the given gemm_weights using the specified act_scales, alpha, and
+    weight_scales. Also scales the layernorm_weights and layernorm_bias if
+    provided.
+
+    Args:
+    gemm_weights (list or torch.Tensor): A list of gemm weights or a single
+        gemm weight tensor.
+    act_scales (torch.Tensor): The activation scales tensor.
+    layernorm_weights (torch.Tensor, optional): The layernorm weights tensor.
+        Defaults to None.
+    layernorm_bias (torch.Tensor, optional): The layernorm bias tensor.
+        Defaults to None.
+    alpha (float, optional): The alpha value used for smoothing. Defaults to 0.5.
+    weight_scales (torch.Tensor, optional): The weight scales tensor.
+        Defaults to None.
+
+    Returns:
+    torch.Tensor: The smoothed scales tensor.
+    """
     if not isinstance(gemm_weights, list):
         gemm_weights = [gemm_weights]
     orig_dtype = gemm_weights[0].dtype
 
-    for gemm in gemm_weights:
-        # gemm_weights are expected to be transposed
-        assert gemm.shape[1] == act_scales.numel()
-
-    if weight_scales is None:
-        weight_scales = torch.cat(
-            [gemm.abs().max(dim=0, keepdim=True)[0] for gemm in gemm_weights],
-            dim=0)
-        weight_scales = weight_scales.max(dim=0)[0]
-    weight_scales.to(float).clamp(min=1e-5)
+    # Calculate the scales tensor using the act_scales, alpha, and weight_scales
     scales = (act_scales.to(gemm_weights[0].device).to(float).pow(alpha) /
               weight_scales.pow(1 - alpha)).clamp(min=1e-5)
 
+    # Apply smoothing to the gemm_weights, layernorm_weights, and layernorm_bias
     apply_smoothing(scales, gemm_weights, layernorm_weights, layernorm_bias,
                     orig_dtype)
 
@@ -87,118 +123,14 @@ def smooth_gemm_fc1_gate(fc1_weights,
                          layernorm_bias=None,
                          alpha=0.5,
                          weight_scales=None):
-    gemm_weights = []
-    if not isinstance(fc1_weights, list):
-        fc1_weights = [fc1_weights]
-    if not isinstance(gate_weights, list):
-        gate_weights = [gate_weights]
+    """
+    Smooths the given fc1_weights and gate_weights using the specified act_scales,
+    alpha, and weight_scales. Also scales the layernorm_weights and layernorm_bias
+    if provided.
 
-    for i in range(len(fc1_weights)):
-        gemm_weight = torch.cat([fc1_weights[i], gate_weights[i]], dim=0)
-        gemm_weights.append(gemm_weight)
-
-    orig_dtype = gemm_weights[0].dtype
-
-    for gemm in gemm_weights:
-        # gemm_weights are expected to be transposed
-        assert gemm.shape[1] == act_scales.numel()
-
-    if weight_scales is None:
-        weight_scales = torch.cat(
-            [gemm.abs().max(dim=0, keepdim=True)[0] for gemm in gemm_weights],
-            dim=0)
-        weight_scales = weight_scales.max(dim=0)[0]
-    weight_scales.to(float).clamp(min=1e-5)
-    scales = (act_scales.to(gemm_weights[0].device).to(float).pow(alpha) /
-              weight_scales.pow(1 - alpha)).clamp(min=1e-5)
-
-    apply_smoothing(scales, fc1_weights + gate_weights, layernorm_weights,
-                    layernorm_bias, orig_dtype)
-
-    return scales
-
-
-@torch.no_grad()
-def smooth_ln_fcs(ln, fcs, act_scales, alpha=0.5):
-    if not isinstance(fcs, list):
-        fcs = [fcs]
-    for fc in fcs:
-        assert isinstance(fc, nn.Linear)
-        assert ln.weight.numel() == fc.in_features == act_scales.numel()
-
-    device, dtype = fcs[0].weight.device, fcs[0].weight.dtype
-    act_scales = act_scales.to(device=device, dtype=dtype)
-    weight_scales = torch.cat(
-        [fc.weight.abs().max(dim=0, keepdim=True)[0] for fc in fcs], dim=0)
-    weight_scales = weight_scales.max(dim=0)[0].clamp(min=1e-5)
-
-    scales = (act_scales.pow(alpha) /
-              weight_scales.pow(1 - alpha)).clamp(min=1e-5).to(device).to(dtype)
-
-    if ln is not None:
-        ln.weight.div_(scales)
-        ln.bias.div_(scales)
-
-    for fc in fcs:
-        fc.weight.mul_(scales.view(1, -1))
-    return scales
-
-
-@torch.no_grad()
-def capture_activation_range(model, tokenizer, num_samples=512, seq_len=512):
-    model.eval()
-    next(model.parameters()).device
-    act_scales = defaultdict(lambda: {"x": None, "y": None, "w": None})
-
-    test_token_num = 923
-    tokenizer.pad_token = tokenizer.eos_token
-
-    def stat_tensor(name, tensor, act_scales, key):
-        hidden_dim = tensor.shape[-1]
-        tensor = tensor.view(-1, hidden_dim).abs().detach()
-        comming_max = torch.max(tensor, dim=0)[0].float()
-
-        if act_scales[name][key] is None:
-            act_scales[name][key] = comming_max
-        else:
-            act_scales[name][key] = torch.max(act_scales[name][key],
-                                              comming_max)
-
-    def stat_input_hook(m, x, y, name):
-        if isinstance(x, tuple):
-            x = x[0]
-        stat_tensor(name, x, act_scales, "x")
-        stat_tensor(name, y, act_scales, "y")
-
-        if act_scales[name]["w"] is None:
-            act_scales[name]["w"] = m.weight.abs().clip(1e-8,
-                                                        None).max(dim=1)[0]
-
-    hooks = []
-    for name, m in model.named_modules():
-        if isinstance(m, nn.Linear) or isinstance(m, Conv1D):
-            hooks.append(
-                m.register_forward_hook(
-                    functools.partial(stat_input_hook, name=name)))
-
-    from datasets import load_dataset
-    dataset_cnn = load_dataset("ccdv/cnn_dailymail", '3.0.0')
-
-    for i in tqdm(range(num_samples), desc="calibrating model"):
-        datapoint = dataset_cnn['train'][i:i + 1]
-        line = copy.copy(datapoint['article'])
-        line[0] = line[0] + ' TL;DR: '
-        line[0] = line[0].strip()
-        line[0] = line[0].replace(" n't", "n't")
-        line_encoded = tokenizer(line,
-                                 return_tensors="pt",
-                                 padding=True,
-                                 truncation=True)["input_ids"].type(torch.int64)
-        line_encoded = line_encoded[:, -test_token_num:]
-        line_encoded = line_encoded.cuda()
-        model(line_encoded)
-
-    for h in hooks:
-        h.remove()
-
-    return act_scales
+    Args:
+    fc1_weights (list or torch.Tensor): A list of fc1 weights or a single fc1
+        weight tensor.
+    gate_weights (list or torch.Tensor): A list of gate weights or a single gate
+        weight tensor.
+    act_scales (torch.Tensor): The activation scales tensor.
