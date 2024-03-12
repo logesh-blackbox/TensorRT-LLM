@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
 #include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
+
+// Include necessary headers for assert, memory, set, string, and vector.
 #include <cassert>
 #include <memory>
 #include <set>
@@ -27,16 +30,20 @@
 namespace tensorrt_llm::plugins
 {
 
+// Declare the QuantizePerTokenPlugin class, which inherits from BasePlugin.
 class QuantizePerTokenPlugin : public BasePlugin
 {
 public:
+    // Default constructor.
     QuantizePerTokenPlugin();
 
+    // Constructor with data and length parameters.
     QuantizePerTokenPlugin(const void* data, size_t length);
 
+    // Destructor.
     ~QuantizePerTokenPlugin() override = default;
 
-    // IPluginV2DynamicExt Methods
+    // Implement IPluginV2DynamicExt methods.
     nvinfer1::IPluginV2DynamicExt* clone() const noexcept override;
     nvinfer1::DimsExprs getOutputDimensions(int outputIndex, const nvinfer1::DimsExprs* inputs, int nbInputs,
         nvinfer1::IExprBuilder& exprBuilder) noexcept override;
@@ -49,11 +56,11 @@ public:
     int enqueue(const nvinfer1::PluginTensorDesc* inputDesc, const nvinfer1::PluginTensorDesc* outputDesc,
         const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream) noexcept override;
 
-    // IPluginV2Ext Methods
+    // Implement IPluginV2Ext methods.
     nvinfer1::DataType getOutputDataType(
         int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
 
-    // IPluginV2 Methods
+    // Implement IPluginV2 methods.
     const char* getPluginType() const noexcept override;
     const char* getPluginVersion() const noexcept override;
     int getNbOutputs() const noexcept override;
@@ -64,26 +71,27 @@ public:
     void destroy() noexcept override;
 
 private:
+    // Declare the mLayerName member variable.
     const std::string mLayerName;
 };
 
+// Declare the QuantizePerTokenPluginCreator class, which inherits from BaseCreator.
 class QuantizePerTokenPluginCreator : public BaseCreator
 {
 public:
+    // Default constructor.
     QuantizePerTokenPluginCreator();
 
+    // Implement IPluginCreator methods.
     const char* getPluginName() const noexcept override;
-
     const char* getPluginVersion() const noexcept override;
-
     const nvinfer1::PluginFieldCollection* getFieldNames() noexcept override;
-
     nvinfer1::IPluginV2* createPlugin(const char* name, const nvinfer1::PluginFieldCollection* fc) noexcept override;
-
     nvinfer1::IPluginV2* deserializePlugin(
         const char* name, const void* serialData, size_t serialLength) noexcept override;
 
 private:
+    // Declare the mFC and mPluginAttributes member variables.
     static nvinfer1::PluginFieldCollection mFC;
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
