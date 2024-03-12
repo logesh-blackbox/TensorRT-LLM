@@ -63,6 +63,7 @@ struct OpMultiplyAddDequantizeInterleavedBToA_fine_scalebias;
 template <typename MmaOp, WeightOnlyQuantOp QuantOp_>
 struct TagOperator
 {
+    // TaggedOperator is the original operator
     using TaggedOperator = MmaOp;
 };
 
@@ -70,18 +71,21 @@ struct TagOperator
 template <>
 struct TagOperator<OpMultiplyAddDequantizeInterleavedBToA, WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY>
 {
+    // TaggedOperator is the original operator with an additional tag
     using TaggedOperator = OpMultiplyAddDequantizeInterleavedBToA_percol_scale;
 };
 
 template <>
 struct TagOperator<OpMultiplyAddDequantizeInterleavedBToA, WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY>
 {
+    // TaggedOperator is the original operator with an additional tag
     using TaggedOperator = OpMultiplyAddDequantizeInterleavedBToA_fine_scale;
 };
 
 template <>
 struct TagOperator<OpMultiplyAddDequantizeInterleavedBToA, WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS>
 {
+    // TaggedOperator is the original operator with an additional tag
     using TaggedOperator = OpMultiplyAddDequantizeInterleavedBToA_fine_scalebias;
 };
 
@@ -91,30 +95,32 @@ struct TagOperator<OpMultiplyAddDequantizeInterleavedBToA, WeightOnlyQuantOp::FI
 template <typename TaggedMmaOp>
 struct DetagOperator
 {
+    // Operator is the original operator
     using Operator = TaggedMmaOp;
+    // QuantOp is the additional information attached to the operator
     static constexpr WeightOnlyQuantOp QuantOp = WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY;
 };
 
 template <>
 struct DetagOperator<OpMultiplyAddDequantizeInterleavedBToA_percol_scale>
 {
+    // Operator is the original operator
     using Operator = OpMultiplyAddDequantizeInterleavedBToA;
+    // QuantOp is the additional information attached to the operator
     static constexpr WeightOnlyQuantOp QuantOp = WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY;
 };
 
 template <>
 struct DetagOperator<OpMultiplyAddDequantizeInterleavedBToA_fine_scale>
 {
+    // Operator is the original operator
     using Operator = OpMultiplyAddDequantizeInterleavedBToA;
+    // QuantOp is the additional information attached to the operator
     static constexpr WeightOnlyQuantOp QuantOp = WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY;
 };
 
 template <>
 struct DetagOperator<OpMultiplyAddDequantizeInterleavedBToA_fine_scalebias>
 {
-    using Operator = OpMultiplyAddDequantizeInterleavedBToA;
-    static constexpr WeightOnlyQuantOp QuantOp = WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS;
-};
-
-} // namespace arch
-} // namespace cutlass
+    // Operator is the original operator
+    using
