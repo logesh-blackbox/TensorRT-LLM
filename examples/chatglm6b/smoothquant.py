@@ -25,13 +25,26 @@ from tqdm import tqdm
 from transformers.pytorch_utils import Conv1D
 
 
-@torch.no_grad()
 def apply_smoothing(scales,
                     gemm_weights,
                     layernorm_weights=None,
                     layernorm_bias=None,
                     dtype=torch.float32,
                     layernorm_1p=False):
+    '''
+    Applies smoothing to the weights of the model based on the given scales.
+
+    Args:
+    scales (torch.Tensor): The scales to apply to the weights.
+    gemm_weights (list of torch.Tensor): The weights of the GEMM layers.
+    layernorm_weights (torch.Tensor, optional): The weights of the LayerNorm layers.
+                                                Defaults to None.
+    layernorm_bias (torch.Tensor, optional): The bias of the LayerNorm layers.
+                                              Defaults to None.
+    dtype (torch.dtype, optional): The data type to use for the smoothing.
+                                    Defaults to torch.float32.
+    layernorm_1p (bool, optional): Whether to use 1p LayerNorm. Defaults to False.
+    '''
     if not isinstance(gemm_weights, list):
         gemm_weights = [gemm_weights]
 
@@ -48,13 +61,28 @@ def apply_smoothing(scales,
         gemm.mul_(scales.view(1, -1)).to(dtype)
 
 
-@torch.no_grad()
 def smooth_gemm(gemm_weights,
                 act_scales,
                 layernorm_weights=None,
                 layernorm_bias=None,
                 alpha=0.5,
                 weight_scales=None):
+    '''
+    Smooths the weights of the GEMM layers based on the activation scales.
+
+    Args:
+    gemm_weights (list of torch.Tensor): The weights of the GEMM layers.
+    act_scales (torch.Tensor): The activation scales.
+    layernorm_weights (torch.Tensor, optional): The weights of the LayerNorm layers.
+                                                Defaults to None.
+    layernorm_bias (torch.Tensor, optional): The bias of the LayerNorm layers.
+                                              Defaults to None.
+    alpha (float, optional): The alpha value for the smoothing. Defaults to 0.5.
+    weight_scales (torch.Tensor, optional): The weight scales. Defaults to None.
+
+    Returns:
+    torch.Tensor: The smoothed scales.
+    '''
     if not isinstance(gemm_weights, list):
         gemm_weights = [gemm_weights]
     orig_dtype = gemm_weights[0].dtype
@@ -78,77 +106,10 @@ def smooth_gemm(gemm_weights,
     return scales
 
 
-@torch.no_grad()
 def smooth_ln_fcs(ln, fcs, act_scales, alpha=0.5):
-    if not isinstance(fcs, list):
-        fcs = [fcs]
-    for fc in fcs:
-        assert isinstance(fc, nn.Linear)
-        assert ln.weight.numel() == fc.in_features == act_scales.numel()
+    '''
+    Smooths the weights of the fully connected layers and LayerNorm layers based
+    on the activation scales.
 
-    device, dtype = fcs[0].weight.device, fcs[0].weight.dtype
-    act_scales = act_scales.to(device=device, dtype=dtype)
-    weight_scales = torch.cat(
-        [fc.weight.abs().max(dim=0, keepdim=True)[0] for fc in fcs], dim=0)
-    weight_scales = weight_scales.max(dim=0)[0].clamp(min=1e-5)
-
-    scales = (act_scales.pow(alpha) /
-              weight_scales.pow(1 - alpha)).clamp(min=1e-5).to(device).to(dtype)
-
-    if ln is not None:
-        ln.weight.div_(scales)
-        ln.bias.div_(scales)
-
-    for fc in fcs:
-        fc.weight.mul_(scales.view(1, -1))
-    return scales
-
-
-@torch.no_grad()
-def capture_activation_range(model, tokenizer, num_samples=512, seq_len=512):
-    model.eval()
-    device = next(model.parameters()).device
-    act_scales = defaultdict(lambda: {"x": None, "y": None, "w": None})
-
-    def stat_tensor(name, tensor, act_scales, key):
-        hidden_dim = tensor.shape[-1]
-        tensor = tensor.view(-1, hidden_dim).abs().detach()
-        comming_max = torch.max(tensor, dim=0)[0].float()
-
-        if act_scales[name][key] is None:
-            act_scales[name][key] = comming_max
-        else:
-            act_scales[name][key] = torch.max(act_scales[name][key],
-                                              comming_max)
-
-    def stat_input_hook(m, x, y, name):
-        if isinstance(x, tuple):
-            x = x[0]
-        stat_tensor(name, x, act_scales, "x")
-        stat_tensor(name, y, act_scales, "y")
-
-        if act_scales[name]["w"] is None:
-            act_scales[name]["w"] = m.weight.abs().clip(1e-8,
-                                                        None).max(dim=0)[0]
-
-    hooks = []
-    for name, m in model.named_modules():
-        if isinstance(m, nn.Linear) or isinstance(m, Conv1D):
-            hooks.append(
-                m.register_forward_hook(
-                    functools.partial(stat_input_hook, name=name)))
-
-    from datasets import load_dataset
-    dataset = load_dataset("lambada", split="validation")
-
-    for i in tqdm(range(num_samples), desc="calibrating model"):
-        input_ids = tokenizer(dataset[i]["text"],
-                              return_tensors="pt",
-                              max_length=seq_len,
-                              truncation=True).input_ids.to(device)
-        model(input_ids)
-
-    for h in hooks:
-        h.remove()
-
-    return act_scales
+    Args:
+    ln (nn.Module): The LayerNorm layer.
