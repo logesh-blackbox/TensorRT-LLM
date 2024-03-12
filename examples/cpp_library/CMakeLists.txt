@@ -11,21 +11,25 @@
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
-# the License. cmake needs this line
-cmake_minimum_required(VERSION 3.1)
-# cmake_minimum_required(VERSION 2.8)
+# the License.
 
-# Enable C++11
+# This CMakeLists.txt file is for building the TRT LLM C++ load example.
+# It uses CMake to build the example.
+
+cmake_minimum_required(VERSION 3.1)
+
+# Set the minimum C++ standard to C++14
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-# Define project name
+# Define the project name
 set(TARGET_NAME trt_llm_plugins_cpp_load_example)
 project(${TARGET_NAME})
 
+# Enable verbose makefiles
 set(CMAKE_VERBOSE_MAKEFILE 1)
 
-# Compile options
+# Set compiler flags
 set(CMAKE_C_FLAGS "-Wall -pthread ")
 set(CMAKE_C_FLAGS_DEBUG "-g -O0")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
@@ -33,9 +37,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -lstdc++")
 set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
 set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
 
+# Set the build type to release
 set(CMAKE_BUILD_TYPE release)
-# set(CMAKE_BUILD_TYPE debug)
 
+# Find CUDA
 find_package(CUDA REQUIRED)
 message(STATUS "CUDA library status:")
 message(STATUS "    config: ${CUDA_DIR}")
@@ -52,4 +57,5 @@ target_link_libraries(${TARGET_NAME} LINK_PRIVATE cudnn)
 target_link_libraries(${TARGET_NAME} LINK_PRIVATE nvinfer)
 target_link_libraries(${TARGET_NAME} LINK_PRIVATE nvinfer_plugin_tensorrt_llm)
 
+# Add include directories
 target_include_directories(${TARGET_NAME} PUBLIC /usr/local/cuda/include)
