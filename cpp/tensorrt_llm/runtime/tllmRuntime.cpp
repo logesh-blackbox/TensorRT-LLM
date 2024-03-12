@@ -26,8 +26,6 @@
 
 using namespace tensorrt_llm::runtime;
 
-namespace tc = tensorrt_llm::common;
-
 namespace
 {
 using DimType = std::remove_reference_t<decltype(std::declval<nvinfer1::Dims>().d[0])>;
@@ -126,105 +124,4 @@ void TllmRuntime::setInputTensors(SizeType contextIndex, TensorMap const& tensor
                     "Input tensor '%s' not found; expected shape: %s", name, ITensor::toString(expectedShape).c_str());
             }
             auto const& tensor = pos->second;
-            auto const tensorDtype = tensor->getDataType();
-            auto const engineDtype = mEngine->getTensorDataType(name);
-            // WAR: TRT does not support mixed FP8 and FP16 input, so engine expects FP16 tensors.
-            TLLM_CHECK_WITH_INFO(tensorDtype == engineDtype
-                    || (tensorDtype == nvinfer1::DataType::kFP8 && engineDtype == nvinfer1::DataType::kHALF),
-                tc::fmtstr("%s: expected type %d, provided type %d", name, static_cast<std::int32_t>(engineDtype),
-                    static_cast<std::int32_t>(tensorDtype)));
-
-            auto const shapeExpected = mEngine->getTensorShape(name);
-            auto const shapeProvided = tensor->getShape();
-            TLLM_CHECK_WITH_INFO(shapeExpected.nbDims == shapeProvided.nbDims,
-                tc::fmtstr("%s: expected %d dims, provided %d dims", name, shapeExpected.nbDims, shapeProvided.nbDims));
-            for (SizeType j = 0; j < shapeExpected.nbDims; ++j)
-            {
-                auto const dimExpected = shapeExpected.d[j];
-                auto const dimProvided = shapeProvided.d[j];
-                if (dimExpected >= 0 && dimExpected != dimProvided)
-                {
-                    TLLM_LOG_WARNING(
-                        "%s: expected dim[%d] = %d, provided dim[%d] = %d", name, j, dimExpected, j, dimProvided);
-                }
-            }
-            TLLM_CHECK_WITH_INFO(context.setInputShape(name, shapeProvided), name);
-            auto* const data = tensor->data();
-            if (data)
-            {
-                context.setInputTensorAddress(name, data);
-            }
-            else
-            {
-                TLLM_CHECK_WITH_INFO(tensor->getSize() == 0, std::string("Invalid data for tensor: ") + name);
-                // TensorRT runtime does not support nullptr.
-                if (!mDummyTensor)
-                {
-                    mDummyTensor = mBufferManager.gpu(ITensor::makeShape({1}));
-                }
-                context.setInputTensorAddress(name, mDummyTensor->data());
-            }
-        }
-    }
-
-    {
-        NVTX3_SCOPED_RANGE(infer_shapes);
-        char const* missing;
-        auto const nbMissing = context.inferShapes(1, &missing);
-        if (nbMissing > 0)
-        {
-            TLLM_THROW("Input shape not specified: %s", missing);
-        }
-        else if (nbMissing < 0)
-        {
-            TLLM_THROW("Invalid input shape");
-        }
-    }
-
-    {
-        NVTX3_SCOPED_RANGE(final_checks);
-        TLLM_CHECK_WITH_INFO(context.allInputDimensionsSpecified(), "Input dimensions not specified");
-        TLLM_CHECK_WITH_INFO(context.allInputShapesSpecified(), "Input shapes not specified");
-    }
-}
-
-void TllmRuntime::setOutputTensors(SizeType contextIndex, TensorMap& tensorMap)
-{
-    NVTX3_FUNC_RANGE();
-    auto& context = getContext(contextIndex);
-    for (std::int32_t i = 0; i < mEngine->getNbIOTensors(); ++i)
-    {
-        auto const name = mEngine->getIOTensorName(i);
-        if (mEngine->getTensorIOMode(name) == nvinfer1::TensorIOMode::kOUTPUT)
-        {
-            NVTX3_SCOPED_RANGE(output_tensor);
-            auto const dims = context.getTensorShape(name);
-            auto const engineDtype = mEngine->getTensorDataType(name);
-            auto pos = tensorMap.find(name);
-            if (pos != tensorMap.end())
-            {
-                auto const& tensor = pos->second;
-                auto const tensorDtype = tensor->getDataType();
-                // WAR: TRT does not support mixed FP8 and FP16 input, so engine expects FP16 tensors.
-                TLLM_CHECK_WITH_INFO(tensorDtype == engineDtype
-                        || (tensorDtype == nvinfer1::DataType::kFP8 && engineDtype == nvinfer1::DataType::kHALF),
-                    tc::fmtstr("%s: expected type %d, provided type %d", name, static_cast<std::int32_t>(engineDtype),
-                        static_cast<std::int32_t>(tensorDtype)));
-
-                tensor->reshape(dims);
-                context.setTensorAddress(name, tensor->data());
-            }
-            else
-            {
-                auto tensor = ITensor::SharedPtr(mBufferManager.gpu(dims, engineDtype));
-                tensorMap.insert(pos, std::make_pair(name, tensor));
-                context.setTensorAddress(name, tensor->data());
-            }
-        }
-    }
-}
-
-CudaStream const& TllmRuntime::getStream() const
-{
-    return *mStream;
-}
+            auto const tensorDtype = tensor
