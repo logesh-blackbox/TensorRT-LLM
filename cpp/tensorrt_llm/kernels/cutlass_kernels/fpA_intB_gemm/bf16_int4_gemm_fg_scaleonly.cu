@@ -26,6 +26,21 @@ namespace cutlass_kernels
 template class CutlassFpAIntBGemmRunner<__nv_bfloat16, cutlass::uint4b_t,
     cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY>;
 #endif
+
+#ifdef ENABLE_FP16
+template class CutlassFpAIntBGemmRunner<__half, cutlass::uint4b_t,
+    cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY>;
+#endif
+
+#ifdef ENABLE_FP32
+template class CutlassFpAIntBGemmRunner<float, cutlass::uint4b_t,
+    cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY>;
+#endif
+
+#ifdef ENABLE_INT8
+template class CutlassFpAIntBGemmRunner<int8_t, cutlass::uint4b_t,
+    cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY>;
+#endif
 } // namespace cutlass_kernels
 } // namespace kernels
-} // namespace tensorrt_llm
+}
