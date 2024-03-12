@@ -89,3 +89,4 @@ class TestFunctional(unittest.TestCase):
         np.testing.assert_allclose(ref.cpu().numpy(),
                                    outputs['output'],
                                    atol=1e-5)
+
