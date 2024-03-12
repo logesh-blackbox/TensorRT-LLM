@@ -12,6 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
 set(TARGET_NAME tensorrt_llm)
 set(SHARED_TARGET ${TARGET_NAME})
 set(SHARED_TARGET
@@ -124,16 +125,4 @@ target_link_libraries(${SHARED_TARGET} PUBLIC ${TRTLLM_LINK_LIBS}
 add_library(${STATIC_TARGET} STATIC)
 
 set_target_properties(
-  ${STATIC_TARGET} PROPERTIES CXX_STANDARD "17" CXX_STANDARD_REQUIRED "YES"
-                              CXX_EXTENSIONS "NO" POSITION_INDEPENDENT_CODE ON)
-
-target_link_libraries(${STATIC_TARGET} PUBLIC ${TRTLLM_LINK_LIBS})
-
-# Cyclic dependency of batch manager on TRT-LLM
-target_link_libraries(${BATCH_MANAGER_TARGET} INTERFACE ${STATIC_TARGET})
-
-if(BUILD_PYT)
-  add_subdirectory(thop)
-endif()
-
-add_subdirectory(plugins)
+  ${
