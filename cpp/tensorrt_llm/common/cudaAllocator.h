@@ -31,7 +31,7 @@ namespace common
 class CudaAllocator : public IAllocator
 {
 public:
-    explicit CudaAllocator(runtime::BufferManager bufferManager);
+    explicit CudaAllocator(runtime::BufferManager& bufferManager);
 
     ~CudaAllocator() override = default;
 
@@ -50,9 +50,10 @@ protected:
     void memSet(void* ptr, int val, size_t size) override;
 
 private:
-    runtime::BufferManager mBufferManager;
+    runtime::BufferManager& mBufferManager;
     std::unordered_map<void const*, runtime::BufferManager::IBufferPtr> mPointerMapping{};
 };
 
 } // namespace common
 } // namespace tensorrt_llm
+
