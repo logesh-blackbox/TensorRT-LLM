@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+// Includes
 #include "tensorrt_llm/common/assert.h"
 #include <functional>
 #include <numeric>
@@ -22,6 +24,22 @@
 namespace tensorrt_llm::common::stl_utils
 {
 
+/**
+ * @brief Performs an inclusive scan on a range of elements, computing the cumulative prefix sum.
+ *
+ * This function is similar to std::inclusive_scan, but provides a fallback implementation for older compilers.
+ *
+ * @tparam TInputIt The type of the input iterator.
+ * @tparam TOutputIt The type of the output iterator.
+ * @tparam TBinOp The type of the binary operation used to combine elements.
+ *
+ * @param first The beginning of the input range.
+ * @param last The end of the input range.
+ * @param dFirst The beginning of the output range.
+ * @param op The binary operation used to combine elements.
+ *
+ * @return The end of the output range.
+ */
 template <typename TInputIt, typename TOutputIt, typename TBinOp>
 constexpr TOutputIt basicInclusiveScan(TInputIt first, TInputIt last, TOutputIt dFirst, TBinOp op)
 {
@@ -43,6 +61,20 @@ constexpr TOutputIt basicInclusiveScan(TInputIt first, TInputIt last, TOutputIt 
     return dFirst;
 }
 
+/**
+ * @brief Performs an inclusive scan on a range of elements, computing the cumulative prefix sum.
+ *
+ * This function is similar to std::inclusive_scan, but provides a fallback implementation for older compilers.
+ *
+ * @tparam TInputIt The type of the input iterator.
+ * @tparam TOutputIt The type of the output iterator.
+ *
+ * @param first The beginning of the input range.
+ * @param last The end of the input range.
+ * @param dFirst The beginning of the output range.
+ *
+ * @return The end of the output range.
+ */
 template <typename TInputIt, typename TOutputIt>
 constexpr TOutputIt inclusiveScan(TInputIt first, TInputIt last, TOutputIt dFirst)
 {
@@ -53,35 +85,22 @@ constexpr TOutputIt inclusiveScan(TInputIt first, TInputIt last, TOutputIt dFirs
 #endif
 }
 
-template <typename TInputIt, typename TOutputIt, typename T, typename TBinOp>
-constexpr TOutputIt basicExclusiveScan(TInputIt first, TInputIt last, TOutputIt dFirst, T init, TBinOp op)
-{
-    if (first != last)
-    {
-        while (true)
-        {
-            T tmp{op(init, *first)};
-            *dFirst = init;
-            ++dFirst;
-            ++first;
-            if (first == last)
-            {
-                break;
-            }
-            init = std::move(tmp);
-        }
-    }
-    return dFirst;
-}
-
-template <typename TInputIt, typename TOutputIt, typename T>
-constexpr TOutputIt exclusiveScan(TInputIt first, TInputIt last, TOutputIt dFirst, T init)
-{
-#if defined(__GNUC__) && __GNUC__ <= 8
-    return basicExclusiveScan(first, last, dFirst, std::move(init), std::plus<>{});
-#else
-    return std::exclusive_scan(first, last, dFirst, std::move(init));
-#endif
-}
-
-} // namespace tensorrt_llm::common::stl_utils
+/**
+ * @brief Performs an exclusive scan on a range of elements, computing the cumulative suffix sum.
+ *
+ * This function is similar to std::exclusive_scan, but provides a fallback implementation for older compilers.
+ *
+ * @tparam TInputIt The type of the input iterator.
+ * @tparam TOutputIt The type of the output iterator.
+ * @tparam T The type of the initial value.
+ * @tparam TBinOp The type of the binary operation used to combine elements.
+ *
+ * @param first The beginning of the input range.
+ * @param last The end of the input range.
+ * @param dFirst The beginning of the output range.
+ * @param init The initial value.
+ * @param op The binary operation used to combine elements.
+ *
+ * @return The end of the output range.
+ */
+template <typename TInputIt, typename TOutputIt, typename T, typename TBin
