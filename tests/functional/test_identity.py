@@ -12,10 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 import sys
 import unittest
-
 import numpy as np
 import pytest
 import torch
@@ -30,7 +30,6 @@ from utils.util import getSMVersion
 
 
 class TestFunctional(unittest.TestCase):
-
     def setUp(self):
         tensorrt_llm.logger.set_level('error')
 
@@ -44,12 +43,19 @@ class TestFunctional(unittest.TestCase):
                 pytest.skip(
                     "bfloat16 is not supported in pre-ampere architecture")
 
+        # Create random input data
         x_data = torch.randn(
             (4, 6, 3, 4), dtype=tensorrt_llm._utils.str_dtype_to_torch(dtype))
+
+        # Create TensorRT builder and network
         builder = tensorrt_llm.Builder()
         net = builder.create_network()
+
+        # Set identity plugin if required
         if use_plugin:
             net.plugin_config.set_identity_plugin(dtype)
+
+        # Define the TensorRT network
         with tensorrt_llm.net_guard(net):
             network = tensorrt_llm.default_trtnet()
             x = Tensor(name='x',
@@ -60,12 +66,18 @@ class TestFunctional(unittest.TestCase):
             network.mark_output(output)
             output.dtype = tensorrt_llm.str_dtype_to_trt(dtype)
 
+        # Build the TensorRT engine
         build_engine = EngineFromNetwork(
             (builder.trt_builder, net.trt_network),
             config=CreateConfig(fp16=(dtype == 'float16'),
                                 bf16=(dtype == 'bfloat16')))
+
+        # Create TensorRT runner
         with TrtRunner(build_engine) as runner:
+            # Run inference on the TensorRT engine
             outputs = runner.infer(feed_dict={'x': x_data})
 
+        # Compare the output of the TensorRT engine with the input data
         np.testing.assert_allclose(x_data.to(torch.float32),
                                    outputs['output'].to(torch.float32))
+
