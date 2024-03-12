@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,8 +19,22 @@ import typing as _tp
 
 
 def run_command(command: _tp.Sequence[str], *, cwd=None, **kwargs) -> None:
-    print(f"Running: cd %s && %s" %
-          (str(cwd or _pl.Path.cwd()), " ".join(command)))
+    """
+    Run a command in a specified directory.
+
+    This function prints the command to be executed and then runs it using the `subprocess.check_call()`
+    function. The command is run in the specified directory (`cwd`), and any additional keyword arguments
+    are passed to `subprocess.check_call()`.
+
+    Args:
+    - command (Sequence[str]): The command to be executed, as a sequence of strings.
+    - cwd (str, optional): The directory in which to run the command. Defaults to the current working directory.
+    - **kwargs: Additional keyword arguments to be passed to `subprocess.check_call()`.
+
+    Returns:
+    None
+    """
+    print(f"Running: cd {str(cwd or _pl.Path.cwd())} && {' '.join(command)}")
     _sp.check_call(command, cwd=cwd, **kwargs)
 
 
@@ -30,25 +43,30 @@ def run_command(command: _tp.Sequence[str], *, cwd=None, **kwargs) -> None:
 # Also, robocopy only accepts dirs, not individual files, so we need a separate command for the
 # single-file case.
 def wincopy(source: str, dest: str, isdir: bool, cwd=None) -> None:
+    """
+    Copy a file or directory using robocopy on Windows.
+
+    This function uses the `robocopy` command to copy a file or directory on Windows. If the source is a
+    single file, it uses the `copy` command instead. The function prints the command to be executed and
+    then runs it using the `subprocess.run()` function. The command is run in the specified directory (`cwd`),
+    and the return code is checked to ensure that the copy was successful.
+
+    Args:
+    - source (str): The path to the source file or directory.
+    - dest (str): The path to the destination file or directory.
+    - isdir (bool): Whether the source is a directory. If True, `robocopy` is used; if False, `copy` is used.
+    - cwd (str, optional): The directory in which to run the command. Defaults to the current working directory.
+
+    Returns:
+    None
+
+    Raises:
+    CalledProcessError: If the copy command returns a nonzero exit code.
+    """
     if not isdir:  # Single-file copy
         run_command(["cmd", "/c", "copy",
                      str(_pl.Path(source)), f".\{dest}"],
                     cwd=cwd)
     else:  # Directory sync
         copy_cmd = ["robocopy", source, f"./{dest}", "/mir", "/e"]
-        print(f"Running: cd %s && %s" %
-              (str(cwd or _pl.Path.cwd()), " ".join(copy_cmd)))
-
-        # Run the command from the specified directory
-        result = _sp.run(copy_cmd, cwd=cwd)
-
-        # Check for valid exit code
-        if result.returncode < 8:
-            print("ROBOCOPY completed successfully.")
-        else:
-            print(
-                "ROBOCOPY failure. Displaying error. See https://ss64.com/nt/robocopy-exit.html for exit code info."
-            )
-            raise _sp.CalledProcessError(returncode=result.returncode,
-                                         cmd=copy_cmd,
-                                         output=result.stderr)
+        print(f"Running: cd {str(cwd or _pl.Path.cwd())} && {' '.join(copy_
