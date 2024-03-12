@@ -23,11 +23,17 @@ namespace kernels
 
 namespace
 {
-auto constexpr kSizePerHead = 80;
+constexpr int kSizePerHead = 80;
 } // namespace
 
 namespace mmha
 {
+
+template <typename T>
+void launchDecoderMaskedMultiheadAttention(const int batchSize, const int seqLength, const int numHeads, const int headSize, const T* input, const T* mask, const T* query, const T* key, const T* value, T* output, T* workspace, cudaStream_t stream)
+{
+    launch<T, kSizePerHead>(batchSize, seqLength, numHeads, headSize, input, mask, query, key, value, output, workspace, stream);
+}
 
 INSTANTIATE_MMHA_LAUNCHERS(float, kSizePerHead)
 
@@ -35,3 +41,4 @@ INSTANTIATE_MMHA_LAUNCHERS(float, kSizePerHead)
 
 } // namespace kernels
 } // namespace tensorrt_llm
+
