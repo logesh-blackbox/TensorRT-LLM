@@ -1,20 +1,39 @@
-build
---pre --extra-index-url https://download.pytorch.org/whl/nightly/cu121
-# torch is CPU-only on Windows, so need to specify a torch version with GPU support
+# Build requirements file
+# This script installs the necessary packages for building a machine learning model.
+
+# The --pre flag is used to install the pre-release version of PyTorch.
+# --extra-index-url is used to specify an additional package index for PyTorch.
+# In this case, it points to the PyTorch nightly build with CUDA 12.1 support.
+build --pre --extra-index-url https://download.pytorch.org/whl/nightly/cu121
+
+# torch is CPU-only on Windows by default, so a specific version with GPU support is required.
+# torchvision is the PyTorch library for image transformations.
+# torchdata is a library for handling large datasets in PyTorch.
+# torchtext is a library for handling text data in PyTorch.
 torch==2.1.0.dev20230828+cu121
 torchvision==0.16.0.dev20230828
 torchdata==0.7.0.dev20230828
 torchtext==0.16.0.dev20230828
+
+# tokenizers is a library for encoding and tokenization.
+# transformers is a library for state-of-the-art Natural Language Processing.
+# diffusers is a library for diffusion models.
 tokenizers==0.13.3
 transformers==4.31.0
 diffusers==0.15.0
+
+# accelerate is a library for distributed training in PyTorch.
+# colored is a library for colored terminal text output.
+# polygraphy is a library for NVIDIA GPU profiling and benchmarking.
 accelerate==0.20.3
 colored
 polygraphy
+
+# onnx is a library for the Open Neural Network Exchange.
+# mpi4py is a library for MPI (Message Passing Interface) in Python.
+# numpy is a library for numerical computing in Python.
+# cuda-python is the CUDA runtime for Python.
 onnx>=1.12.0
 mpi4py
 numpy
-cuda-python==12.2.0
-sentencepiece>=0.1.99
-wheel
-pywin32
+cuda-python==1
