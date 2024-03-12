@@ -1,3 +1,8 @@
+# Git LFS pointer file
 version https://git-lfs.github.com/spec/v1
+
+# SHA-256 object ID of the associated large file
 oid sha256:108ecbad13f180b9ba3aa530aad20a738aceb93ef938c869f26d078002702022
+
+# Size of the large file in bytes
 size 1336480
