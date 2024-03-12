@@ -41,6 +41,17 @@ namespace kernels {
  * @param stream The CUDA stream.
  */
 template <typename T>
-void invokeBanRepeatNgram(T* logits, const int** output_ids_buf, const bool* finished_buf, const int* parent_ids_buf,
-                          int batch_size, int local_batch_size, int beam_width, const int* no_repeat_ngram_size_t,
-                          int id_offset, int voc
+__global__ void banRepeatNgramKernel(T* logits, const int* output_ids_buf, const bool* finished_buf,
+                                     const int* parent_ids_buf, int batch_size, int local_batch_size, int beam_width,
+                                     const int* no_repeat_ngram_size_buf, int id_offset, int vocab_size_padded,
+                                     int step, cudaStream_t stream) {
+  int batch_index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (batch_index >= batch_size) return;
+
+  int local_batch_index = batch_index / local_batch_size;
+  int local_index = batch_index % local_batch_size;
+
+  int* output_ids = &output_ids_buf[local_batch_index * beam_width];
+  bool finished = finished_buf[local_batch_index];
+  int parent_id = parent_ids_buf[local_batch_index];
+  int no_repeat_ngram_size = no_repeat_ngram_size_buf[local
