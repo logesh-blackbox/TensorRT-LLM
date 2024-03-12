@@ -29,29 +29,47 @@ namespace tensorrt_llm::runtime
 class NcclCommunicator
 {
 public:
+    /**
+     * @template T
+     * @param sendbuff Buffer with data to send
+     * @param count Number of elements to send
+     * @param peer ID of the receiving process
+     * @param stream CUDA stream to use for the operation
+     * @param logger Logger for reporting errors
+     *
+     * This function sends data over the network to the process with the given ID.
+     */
     template <typename T>
     void send(T* sendbuff, size_t count, int peer, CudaStream const& stream, nvinfer1::ILogger& logger) const;
 
+    /**
+     * @template T
+     * @param buf Buffer to send
+     * @param peer ID of the receiving process
+     * @param stream CUDA stream to use for the operation
+     * @param logger Logger for reporting errors
+     *
+     * This function sends the contents of the given buffer over the network to the process with the given ID.
+     */
     template <typename T>
     void send(IBuffer const& buf, int peer, CudaStream const& stream, nvinfer1::ILogger& logger) const
     {
         send(bufferCast<T>(buf), buf.getSize(), peer, stream, logger);
     }
 
+    /**
+     * @template T
+     * @param recvbuff Buffer to receive data into
+     * @param count Number of elements to receive
+     * @param peer ID of the sending process
+     * @param stream CUDA stream to use for the operation
+     * @param logger Logger for reporting errors
+     *
+     * This function receives data over the network from the process with the given ID.
+     */
     template <typename T>
-    void receive(T* sendbuff, size_t count, int peer, CudaStream const& stream, nvinfer1::ILogger& logger) const;
+    void receive(T* recvbuff, size_t count, int peer, CudaStream const& stream, nvinfer1::ILogger& logger) const;
 
-    template <typename T>
-    void receive(IBuffer& buf, int peer, CudaStream const& stream, nvinfer1::ILogger& logger) const
-    {
-        receive(bufferCast<T>(buf), buf.getSize(), peer, stream, logger);
-    }
-
-    static std::shared_ptr<NcclCommunicator> createPipelineComm(
-        WorldConfig const& worldConfig, nvinfer1::ILogger& logger);
-
-private:
-    ncclComm_t mComm;
-};
-
-} // namespace tensorrt_llm::runtime
+    /**
+     * @template T
+     * @param
