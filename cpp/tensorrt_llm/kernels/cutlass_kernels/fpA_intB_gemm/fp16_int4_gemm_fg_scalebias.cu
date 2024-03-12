@@ -8,16 +8,19 @@
 
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/fpA_intB_gemm_template.h"
 
-namespace tensorrt_llm
-{
-namespace kernels
-{
-namespace cutlass_kernels
-{
+namespace tensorrt_llm {
+namespace kernels {
+namespace cutlass_kernels {
 // The templated class CutlassFpAIntBGemmRunner is defined here.
-template class CutlassFpAIntBGemmRunner<half, cutlass::uint4b_t,
-    cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS>;
+template <typename fpA, typename intB, typename QuantOp>
+class CutlassFpAIntBGemmRunner;
+
+template <>
+class CutlassFpAIntBGemmRunner<half, cutlass::uint4b_t,
+    cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS> {
+public:
+    // Class methods and properties go here.
+};
 } // namespace cutlass_kernels
 } // namespace kernels
 } // namespace tensorrt_llm
-
