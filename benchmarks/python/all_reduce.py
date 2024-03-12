@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser
-
-import tensorrt as trt
+import argparse
+import os
 import torch
 from cuda import cuda, cudart
 from mpi4py import MPI
@@ -126,7 +125,7 @@ def allreduce_benchmark(dtype: str, test_range: str = "10,10000000,10"):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("--dtype", "-t", default="float16")
     parser.add_argument("--range",
                         "-r",
