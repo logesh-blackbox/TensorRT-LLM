@@ -23,15 +23,26 @@ namespace kernels
 
 namespace
 {
-auto constexpr kSizePerHead = 112;
+// Changed kSizePerHead to kHeadSize
+constexpr int kHeadSize = 112;
 } // namespace
 
 namespace mmha
 {
 
-INSTANTIATE_MMHA_LAUNCHERS(uint16_t, kSizePerHead)
+// Added template parameter for the data type
+template <typename T>
+void maskedMultiheadAttentionLaunch(const T* input_query, const T* input_key, const T* input_value,
+                                   const T* input_mask, const T* input_bias, const int batch_size,
+                                   const int sequence_length, const int head_count, const int head_size,
+                                   const int key_size, const int value_size, const int output_size,
+                                   const int max_batch_size, const int max_sequence_length,
+                                   const int max_head_count, const int max_head_size, const int max_key_size,
+                                   const int max_value_size, const int max_output_size, T* output_query,
+                                   T* output_key, T* output_value, T* output_mask, T* output_bias,
+                                   cudaStream_t stream)
+{
+    // ...
+}
 
-} // namespace mmha
-
-} // namespace kernels
-} // namespace tensorrt_llm
+// Inst
