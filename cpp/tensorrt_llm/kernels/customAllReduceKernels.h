@@ -100,3 +100,4 @@ void customAllReduce(kernels::AllReduceParams& params, void* data, size_t elts, 
     common::datatype_enum dataType, AllReduceStrategyType strat, cudaStream_t stream);
 
 } // namespace tensorrt_llm::kernels
+
