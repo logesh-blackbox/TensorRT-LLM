@@ -26,3 +26,7 @@ INSTANTIATE_BEAMSEARCH_K(half, 4);
 
 } // namespace kernels
 } // namespace tensorrt_llm
+
+// Add the following line to the end of the file
+#include "onlineSoftmaxBeamsearchKernelsTemplate.cuh"
+
