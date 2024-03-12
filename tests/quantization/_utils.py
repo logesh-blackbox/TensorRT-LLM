@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import numpy as np
 import torch
 
@@ -128,33 +129,4 @@ def gt_matmul_smooth_quant(mat1, mat2, scale_a_, scale_b_, dtype, bias=None):
     ref = torch.matmul(mat1.cpu(), mat2.cpu())
 
     m = 1
-    for ii in range(len(mat1.shape) - 1):
-        m *= mat1.shape[ii]
-    n = mat2.shape[1]
-
-    # Prepare per element scaling
-    scale_a = scale_a_.expand((m, 1))
-    scale_b = scale_b_.expand((1, n))
-    scaling = torch.matmul(scale_a.cuda(), scale_b.cuda()).reshape(ref.shape)
-    # Scale output and cast to right type
-    ref = ref.cuda() * scaling.cuda()
-
-    # Round to the nearest int to match cuda rounding
-    if dtype == "int32":
-        ref = torch.round(ref)
-
-    # Cast ref to the required output type
-    ref = ref.to(dtype=tensorrt_llm._utils.str_dtype_to_torch(dtype))
-
-    if bias is not None:
-        ref += bias.cuda()
-
-    return ref
-
-
-def gt_quantize_per_token(x):
-    x = x.to(dtype=torch.float32)
-    xmax, _ = x.abs().max(dim=-1, keepdim=True)
-    x = (x * 127.0 / xmax).round().clip(-128, 127).to(dtype=torch.int8)
-    scale_act = (xmax / 127.0).reshape(-1, 1)
-    return x, scale_act
+    for ii in range(len(mat1
