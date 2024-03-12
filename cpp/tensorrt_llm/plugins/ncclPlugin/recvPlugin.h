@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#pragma once
-
 #include "tensorrt_llm/common/mpiUtils.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <cassert>
