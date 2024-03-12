@@ -34,31 +34,60 @@ enum class QuantType
     INT8_WEIGHT_ONLY,
     PACKED_INT4_WEIGHT_ONLY
 };
-int get_bits_in_quant_type(QuantType quant_type);
+
+// Added this function to get the number of bits in a QuantType
+int get_bits_in_quant_type(QuantType quant_type)
+{
+    switch (quant_type)
+    {
+    case QuantType::INT8_WEIGHT_ONLY:
+        return 8;
+    case QuantType::PACKED_INT4_WEIGHT_ONLY:
+        return 4;
+    default:
+        throw std::invalid_argument("Invalid QuantType");
+    }
+}
 
 // Shapes here can be 2 or 3D. 2-D shapes are [num_rows, num_cols]
 // 3-D shapes are [num_experts, num_rows, num_cols]
 void permute_B_rows_for_mixed_gemm(int8_t* permuted_quantized_tensor, const int8_t* quantized_tensor,
-    const std::vector<size_t>& shape, QuantType quant_type, const int64_t arch_version);
+    const std::vector<size_t>& shape, QuantType quant_type, const int64_t arch_version)
+{
+    // Added a check for the architecture version to ensure that it is supported
+    if (arch_version != 70 && arch_version != 80)
+    {
+        throw std::invalid_argument("Unsupported architecture version");
+    }
 
-void subbyte_transpose(int8_t* transposed_quantized_tensor, const int8_t* quantized_tensor,
-    const std::vector<size_t>& shape, QuantType quant_type);
+    // Added a check for the shape size to ensure that it is either 2 or 3
+    if (shape.size() != 2 && shape.size() != 3)
+    {
+        throw std::invalid_argument("Invalid shape size");
+    }
 
-void add_bias_and_interleave_quantized_tensor_inplace(int8_t* tensor, const size_t num_elts, QuantType quant_type);
+    // Added a check for the quantization type to ensure that it is supported
+    if (quant_type != QuantType::INT8_WEIGHT_ONLY && quant_type != QuantType::PACKED_INT4_WEIGHT_ONLY)
+    {
+        throw std::invalid_argument("Unsupported quantization type");
+    }
 
-void preprocess_weights_for_mixed_gemm(int8_t* preprocessed_quantized_weight, const int8_t* row_major_quantized_weight,
-    const std::vector<size_t>& shape, QuantType quant_type);
+    // Added error checking for the tensor pointers
+    if (quantized_tensor == nullptr || permuted_quantized_tensor == nullptr)
+    {
+        throw std::invalid_argument("Null tensor pointer");
+    }
 
-template <typename ComputeType, typename WeightType>
-void symmetric_quantize(int8_t* processed_quantized_weight, ComputeType* scale_ptr, const WeightType* input_weight_ptr,
-    const std::vector<size_t>& shape, QuantType quant_type);
+    // Added a check for the tensor sizes to ensure that they match the shape
+    if (quantized_tensor.size() != get_num_elements(shape) || permuted_quantized_tensor.size() != get_num_elements(shape))
+    {
+        throw std::invalid_argument("Invalid tensor size");
+    }
 
-// This is exposed so that we can write tests that use the processed weights for CUTLASS but the unprocessed weight
-// to implement a simple reference implementation.
-template <typename ComputeType, typename WeightType>
-void symmetric_quantize(int8_t* processed_quantized_weight, int8_t* unprocessed_quantized_weight,
-    ComputeType* scale_ptr, const WeightType* input_weight_ptr, const std::vector<size_t>& shape, QuantType quant_type);
-
-} // namespace cutlass_kernels
-} // namespace kernels
-} // namespace tensorrt_llm
+    // Added code to handle the 2D and 3D cases separately
+    if (shape.size() == 2)
+    {
+        // 2D case
+        // Added error checking for the tensor strides
+        if (quantized_tensor.stride(0) != shape[1] || quantized_tensor.stride(1) != 1 ||
+            permuted_quantized_tensor.stride(0) != shape[0] || per
