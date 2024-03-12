@@ -27,6 +27,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <vector>
 
 namespace nvinfer1
 {
@@ -41,7 +42,7 @@ class TrtGptModel;
 
 /* Responsible for shepherding requests through to completion
    using TRT Backend. */
-class GptManager
+class GptManager : public BatchManager
 {
 public:
     using SizeType = tensorrt_llm::runtime::SizeType;
@@ -57,24 +58,24 @@ public:
     /* Wraps the user-provided callback for requests.
        Adds requests to request table.
        Invoked every generation loop iteration. */
-    BatchManagerErrorCode_t fetchNewRequests();
+    BatchManagerErrorCode_t fetchNewRequests() override;
 
     /* Returns completed requests.
        Deletes entry from activeRequests */
-    BatchManagerErrorCode_t returnCompletedRequests();
+    BatchManagerErrorCode_t returnCompletedRequests() override;
 
-    BatchManagerErrorCode_t pollStopSignals();
+    BatchManagerErrorCode_t pollStopSignals() override;
 
-    BatchManagerErrorCode_t returnBatchManagerStats();
+    BatchManagerErrorCode_t returnBatchManagerStats() override;
 
-    BatchManagerErrorCode_t waitUntilTerminate();
+    BatchManagerErrorCode_t waitUntilTerminate() override;
 
     virtual ~GptManager();
 
 protected:
     /* Invokes one step of backend
        Updates state of all requests */
-    virtual BatchManagerErrorCode_t step(RequestList& activeRequests, std::set<uint64_t>& activeRequestsIds);
+    virtual BatchManagerErrorCode_t step(RequestList& activeRequests, std::set<uint64_t>& activeRequestsIds) override;
 
 private:
     void validateLlmRequest(LlmRequest& newReq) const;
@@ -122,3 +123,5 @@ private:
 };
 
 } // namespace tensorrt_llm::batch_manager
+
+``
