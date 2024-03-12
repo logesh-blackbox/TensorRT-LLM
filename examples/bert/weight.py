@@ -1,18 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import numpy as np
 import torch
 
@@ -20,7 +5,7 @@ def extract_layer_idx(name):
     ss = name.split('.')
     for s in ss:
         if s.isdigit():
-            return s
+            return int(s)
     return None
 
 def split(v, tp_size, idx, dim=0):
@@ -72,35 +57,46 @@ def load_from_hf_bert(tensorrt_llm_bert,
             layer_idx = extract_layer_idx(k)
             if layer_idx is None:
                 continue
-            idx = int(layer_idx)
             if 'attention.output.dense.weight' in k:
                 tensorrt_llm_bert.layers[
-                    idx].attention.dense.weight.value = split(v,
-                                                              tensor_parallel,
-                                                              rank,
-                                                              dim=1)
+                    layer_idx].attention.dense.weight.value = split(v,
+                                                                  tensor_parallel,
+                                                                  rank,
+                                                                  dim=1)
             elif 'attention.output.dense.bias' in k:
-                tensorrt_llm_bert.layers[idx].attention.dense.bias.value = v
+                tensorrt_llm_bert.layers[layer_idx].attention.dense.bias.value = v
             elif 'attention.output.LayerNorm.weight' in k:
-                tensorrt_llm_bert.layers[idx].input_layernorm.weight.value = v
+                tensorrt_llm_bert.layers[layer_idx].input_layernorm.weight.value = v
             elif 'attention.output.LayerNorm.bias' in k:
-                tensorrt_llm_bert.layers[idx].input_layernorm.bias.value = v
+                tensorrt_llm_bert.layers[layer_idx].input_layernorm.bias.value = v
             elif 'intermediate.dense.weight' in k:
-                tensorrt_llm_bert.layers[idx].mlp.fc.weight.value = split(
+                tensorrt_llm_bert.layers[layer_idx].mlp.fc.weight.value = split(
                     v, tensor_parallel, rank)
             elif 'intermediate.dense.bias' in k:
-                tensorrt_llm_bert.layers[idx].mlp.fc.bias.value = split(
+                tensorrt_llm_bert.layers[layer_idx].mlp.fc.bias.value = split(
                     v, tensor_parallel, rank)
             elif 'output.dense.weight' in k:
-                tensorrt_llm_bert.layers[idx].mlp.proj.weight.value = split(
+                tensorrt_llm_bert.layers[layer_idx].mlp.proj.weight.value = split(
                     v, tensor_parallel, rank, dim=1)
             elif 'output.dense.bias' in k:
-                tensorrt_llm_bert.layers[idx].mlp.proj.bias.value = v
+                tensorrt_llm_bert.layers[layer_idx].mlp.proj.bias.value = v
             elif 'output.LayerNorm.weight' in k:
-                tensorrt_llm_bert.layers[idx].post_layernorm.weight.value = v
+                tensorrt_llm_bert.layers[layer_idx].post_layernorm.weight.value = v
             elif 'output.LayerNorm.bias' in k:
-                tensorrt_llm_bert.layers[idx].post_layernorm.bias.value = v
+                tensorrt_llm_bert.layers[layer_idx].post_layernorm.bias.value = v
             elif 'attention.self.query.weight' in k:
-                qkv_weight[idx][0] = v
+                qkv_weight[layer_idx][0] = v
             elif 'attention.self.query.bias' in k:
-                qkv_
+                qkv_bias[layer_idx][0] = v
+            elif 'attention.self.key.weight' in k:
+                qkv_weight[layer_idx][1] = v
+            elif 'attention.self.key.bias' in k:
+                qkv_bias[layer_idx][1] = v
+            elif 'attention.self.value.weight' in k:
+                qkv_weight[layer_idx][2] = v
+            elif 'attention.self.value.bias' in k:
+                qkv_bias[layer_idx][2] = v
+            else:
+                continue
+
+    for layer_idx in range
