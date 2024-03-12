@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import argparse
 import json
 import os
@@ -117,3 +118,4 @@ if __name__ == '__main__':
         assert ok, "Runtime execution failed"
         torch.cuda.synchronize()
         res = outputs[output_name]
+
