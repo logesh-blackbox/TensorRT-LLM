@@ -94,4 +94,21 @@ public:
     }
 
     /**
+     * @brief Get the enable TRT overlap.
+     *
+     * @return std::optional<bool> Enable TRT overlap.
+     */
+    [[nodiscard]] std::optional<bool> getEnableTrtOverlap() const
+    {
+        return mEnableTrtOverlap;
+    }
+
+private:
+    std::optional<SizeType> mMaxNumSequences;
+    std::optional<SizeType> mMaxTokensInPagedKvCache;
+    std::optional<float> mKvCacheFreeGpuMemFraction;
+    std::optional<bool> mEnableTrtOverlap;
+};
+
+} // namespace tensorrt_llm::batch_manager
 
