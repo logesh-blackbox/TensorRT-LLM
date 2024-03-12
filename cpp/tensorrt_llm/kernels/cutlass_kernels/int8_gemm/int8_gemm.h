@@ -49,8 +49,7 @@ public:
 
     virtual void gemm(const int8_t* A, const int8_t* B, tk::QuantMode quantOption, const float* alphaCol,
         const float* alphaRow, void* C, int m, int n, int k, tkc::CutlassGemmConfig gemmConfig, char* workspacePtr,
-        const size_t workspaceBytes, cudaStream_t stream)
-        = 0;
+        const size_t workspaceBytes, cudaStream_t stream) = 0;
 
     // Returns desired workspace size in bytes.
     virtual size_t getWorkspaceSize(const int m, const int n, const int k) = 0;
@@ -67,27 +66,49 @@ template <typename T>
 class CutlassInt8GemmRunner : public virtual CutlassInt8GemmRunnerInterface
 {
 public:
-    CutlassInt8GemmRunner();
-    ~CutlassInt8GemmRunner();
+    CutlassInt8GemmRunner() : mSm(0), mMultiProcessorCount(0) {}
 
-    void gemm(const int8_t* A, const int8_t* B, tk::QuantMode quantOption, const float* alphaCol, const float* alphaRow,
-        void* C, int m, int n, int k, tkc::CutlassGemmConfig gemmConfig, char* workspacePtr,
-        const size_t workspaceBytes, cudaStream_t stream) override;
+    ~CutlassInt8GemmRunner() {}
+
+    void gemm(const int8_t* A, const int8_t* B, tk::QuantMode quantOption, const float* alphaCol,
+        const float* alphaRow, void* C, int m, int n, int k, tkc::CutlassGemmConfig gemmConfig, char* workspacePtr,
+        const size_t workspaceBytes, cudaStream_t stream) override
+    {
+        dispatchToArch<T>(A, B, quantOption, alphaCol, alphaRow, static_cast<T*>(C), m, n, k, gemmConfig,
+            workspacePtr, workspaceBytes, stream);
+    }
 
     // Returns desired workspace size in bytes.
-    size_t getWorkspaceSize(const int m, const int n, const int k) override;
+    size_t getWorkspaceSize(const int m, const int n, const int k) override
+    {
+        return 0;
+    }
 
-    std::vector<tkc::CutlassGemmConfig> getConfigs() const override;
+    std::vector<tkc::CutlassGemmConfig> getConfigs() const override
+    {
+        return {};
+    }
 
 private:
-    void dispatchToArch(const int8_t* A, const int8_t* B, tk::QuantMode quantOption, const float* alphaCol,
-        const float* alphaRow, T* C, int m, int n, int k, tkc::CutlassGemmConfig gemmConfig, char* workspacePtr,
-        const size_t workspaceBytes, cudaStream_t stream, int* occupancy = nullptr);
-
     int mSm;
     int mMultiProcessorCount;
+
+    template <typename U>
+    void dispatchToArch(const int8_t* A, const int8_t* B, tk::QuantMode quantOption, const float* alphaCol,
+        const float* alphaRow, U* C, int m, int n, int k, tkc::CutlassGemmConfig gemmConfig, char* workspacePtr,
+        const size_t workspaceBytes, cudaStream_t stream, int* occupancy = nullptr)
+    {
+        // Set the number of SMs and multi-processors.
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, 0);
+        mSm = prop.multiProcessorCount;
+        mMultiProcessorCount = prop.multiProcessorCount;
+
+        // Implement the gemm function here.
+    }
 };
 
 } // namespace cutlass_kernels
 } // namespace kernels
 } // namespace tensorrt_llm
+
