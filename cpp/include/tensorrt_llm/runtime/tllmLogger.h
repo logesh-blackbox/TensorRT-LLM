@@ -26,9 +26,10 @@ class TllmLogger : public nvinfer1::ILogger
 public:
     void log(Severity severity, nvinfer1::AsciiChar const* msg) noexcept override;
 
-    Severity getLevel();
+    Severity getLevel() const;
 
     void setLevel(Severity level);
 };
 
 } // namespace tensorrt_llm::runtime
+
