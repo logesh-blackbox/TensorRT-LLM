@@ -26,6 +26,8 @@ namespace common
 {
 
 #ifdef ENABLE_BF16
+
+// Converts a pair of bfloat16 values to a pair of float values.
 inline __device__ float2 bf1622float2(const __nv_bfloat162 val)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
@@ -38,6 +40,7 @@ inline __device__ float2 bf1622float2(const __nv_bfloat162 val)
 #endif
 }
 
+// Converts a pair of bfloat16 values to a single int16_t value.
 inline __device__ int16_t bf1622int16(__nv_bfloat162 val)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
@@ -70,6 +73,7 @@ inline __device__ int16_t bf1622int16(__nv_bfloat162 val)
 #endif
 }
 
+// Converts a pair of float values to a pair of bfloat16 values.
 inline __device__ __nv_bfloat162 float22bf162(const float2 val)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
@@ -79,7 +83,8 @@ inline __device__ __nv_bfloat162 float22bf162(const float2 val)
 #endif
 }
 
-inline __device__ __nv_bfloat162 bf162bf162(const __nv_bfloat16 val)
+// Converts a single bfloat16 value to a pair of bfloat16 values.
+inline __device__ __nv_bfloat162 bf16bf162(const __nv_bfloat16 val)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
     __nv_bfloat162 val2;
@@ -91,6 +96,7 @@ inline __device__ __nv_bfloat162 bf162bf162(const __nv_bfloat16 val)
 #endif
 }
 
+// Performs horizontal addition on a pair of bfloat16 values.
 inline __device__ __nv_bfloat162 bf16hadd2(const __nv_bfloat162 x, const __nv_bfloat162 y)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
@@ -105,6 +111,7 @@ inline __device__ __nv_bfloat162 bf16hadd2(const __nv_bfloat162 x, const __nv_bf
 #endif
 }
 
+// Performs horizontal addition on a pair of bfloat16 values.
 inline __device__ __nv_bfloat16 bf16hadd(const __nv_bfloat16 x, const __nv_bfloat16 y)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
@@ -114,190 +121,10 @@ inline __device__ __nv_bfloat16 bf16hadd(const __nv_bfloat16 x, const __nv_bfloa
 #endif
 }
 
+// Performs horizontal subtraction on a pair of bfloat16 values.
 inline __device__ __nv_bfloat162 bf16hsub2(const __nv_bfloat162 x, const __nv_bfloat162 y)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
     float fxl, fxh, fyl, fyh;
     fxl = __low2float(x);
-    fxh = __high2float(x);
-    fyl = __low2float(y);
-    fyh = __high2float(y);
-    return __floats2bfloat162_rn(fxl - fyl, fxh - fyh);
-#else
-    return __hsub2(x, y);
-#endif
-}
 
-inline __device__ __nv_bfloat16 bf16hsub(const __nv_bfloat16 x, const __nv_bfloat16 y)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    return __float2bfloat16(__bfloat162float(x) - __bfloat162float(y));
-#else
-    return __hsub(x, y);
-#endif
-}
-
-inline __device__ __nv_bfloat162 bf16hmul2(const __nv_bfloat162 x, const __nv_bfloat162 y)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    float fxl, fxh, fyl, fyh;
-    fxl = __low2float(x);
-    fxh = __high2float(x);
-    fyl = __low2float(y);
-    fyh = __high2float(y);
-    return __floats2bfloat162_rn(fxl * fyl, fxh * fyh);
-#else
-    return __hmul2(x, y);
-#endif
-}
-
-inline __device__ __nv_bfloat16 bf16hmul(const __nv_bfloat16 x, const __nv_bfloat16 y)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    return __float2bfloat16(__bfloat162float(x) * __bfloat162float(y));
-#else
-    return __hmul(x, y);
-#endif
-}
-
-inline __device__ __nv_bfloat162 bf16hfma2(const __nv_bfloat162 x, const __nv_bfloat162 y, const __nv_bfloat162 z)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    float fxl, fxh, fyl, fyh, fzl, fzh;
-    fxl = __low2float(x);
-    fxh = __high2float(x);
-    fyl = __low2float(y);
-    fyh = __high2float(y);
-    fzl = __low2float(z);
-    fzh = __high2float(z);
-    return __floats2bfloat162_rn(fxl * fyl + fzl, fxh * fyh + fzh);
-#else
-    return __hfma2(x, y, z);
-#endif
-}
-
-inline __device__ __nv_bfloat16 bf16hfma(const __nv_bfloat16 x, const __nv_bfloat16 y, const __nv_bfloat16 z)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    return __float2bfloat16(__bfloat162float(x) * __bfloat162float(y) + __bfloat162float(z));
-#else
-    return __hfma(x, y, z);
-#endif
-}
-
-inline __device__ __nv_bfloat162 bf16exp2(const __nv_bfloat162 x)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    float fxl, fxh;
-    fxl = __low2float(x);
-    fxh = __high2float(x);
-    ;
-    return __floats2bfloat162_rn(expf(fxl), expf(fxh));
-#else
-    return h2exp(x);
-#endif
-}
-
-#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 800)
-#if defined(CUDART_VERSION) && (CUDART_VERSION < 12020)
-inline __device__ __nv_bfloat162 operator*(const __nv_bfloat162 x, const __nv_bfloat162 y)
-{
-    return bf16hmul2(x, y);
-};
-
-inline __device__ __nv_bfloat162 operator+(const __nv_bfloat162 x, const __nv_bfloat162 y)
-{
-    return bf16hadd2(x, y);
-};
-
-inline __device__ __nv_bfloat162 make_bfloat162(const __nv_bfloat16 x, const __nv_bfloat16 y)
-{
-    __nv_bfloat162 t;
-    t.x = x;
-    t.y = y;
-    return t;
-}
-#endif
-#endif
-
-inline __device__ __nv_bfloat16 bf16hadd(__nv_bfloat16 a, __nv_bfloat16 b, __nv_bfloat16 c)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    return __float2bfloat16(__bfloat162float(a) + __bfloat162float(b) + __bfloat162float(c));
-#else
-    return a + b + c;
-#endif
-}
-
-inline __device__ __nv_bfloat16 bf16hadd(__nv_bfloat16 a, __nv_bfloat16 b, __nv_bfloat16 c, __nv_bfloat16 d)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    return __float2bfloat16(__bfloat162float(a) + __bfloat162float(b) + __bfloat162float(c) + __bfloat162float(d));
-#else
-    return (__nv_bfloat16) ((float) a + (float) b + (float) c + (float) d);
-#endif
-}
-
-inline __device__ __nv_bfloat162 bf16hadd2(__nv_bfloat162 a, __nv_bfloat162 b, __nv_bfloat162 c)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    float fal, fah, fbl, fbh, fcl, fch;
-    fal = __low2float(a);
-    fah = __high2float(a);
-    fbl = __low2float(b);
-    fbh = __high2float(b);
-    fcl = __low2float(c);
-    fch = __high2float(c);
-    return __floats2bfloat162_rn(fal + fbl + fcl, fah + fbh + fch);
-#else
-    return a + b + c;
-#endif
-}
-
-inline __device__ __nv_bfloat16 bf16hmul(__nv_bfloat16 a, __nv_bfloat16 b, __nv_bfloat16 c)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    return __float2bfloat16(__bfloat162float(a) * __bfloat162float(b) * __bfloat162float(c));
-#else
-    return a * b * c;
-#endif
-}
-
-inline __device__ __nv_bfloat162 bf16hmul2(__nv_bfloat162 a, __nv_bfloat162 b, __nv_bfloat162 c)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    float fal, fah, fbl, fbh, fcl, fch;
-    fal = __low2float(a);
-    fah = __high2float(a);
-    fbl = __low2float(b);
-    fbh = __high2float(b);
-    fcl = __low2float(c);
-    fch = __high2float(c);
-    return __floats2bfloat162_rn(fal * fbl * fcl, fah * fbh * fch);
-#else
-    return a * b * c;
-#endif
-}
-
-inline __device__ __nv_bfloat162 bf16hfma2(__nv_bfloat162 a, __nv_bfloat162 b, __nv_bfloat162 c, __nv_bfloat162 d)
-{
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-    float fal, fah, fbl, fbh, fcl, fch, fdl, fdh;
-    fal = __low2float(a);
-    fah = __high2float(a);
-    fbl = __low2float(b);
-    fbh = __high2float(b);
-    fcl = __low2float(c);
-    fch = __high2float(c);
-    fdl = __low2float(d);
-    fdh = __high2float(d);
-    return __floats2bfloat162_rn(fal * fbl * fcl + fdl, fah * fbh * fch + fdh);
-#else
-    return a * b * c + d;
-#endif
-}
-
-#endif // ENABLE_BF16
-
-} // namespace common
-} // namespace tensorrt_llm
