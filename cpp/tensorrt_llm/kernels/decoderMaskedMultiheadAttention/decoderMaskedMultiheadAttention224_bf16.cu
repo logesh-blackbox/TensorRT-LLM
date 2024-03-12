@@ -23,17 +23,16 @@ namespace kernels
 
 namespace
 {
-auto constexpr kSizePerHead = 224;
-} // namespace
+// Define the size per head as a constant
+constexpr int kSizePerHead = 224;
 
-namespace mmha
-{
-
-#ifdef ENABLE_BF16
-INSTANTIATE_MMHA_LAUNCHERS(__nv_bfloat16, kSizePerHead)
-#endif
-
-} // namespace mmha
-
-} // namespace kernels
-} // namespace tensorrt_llm
+// Define a macro to instantiate the MMHA launchers for different data types
+#define INSTANTIATE_MMHA_LAUNCHERS(T, sizePerHead)                                                  \
+  template void decoderMaskedMultiheadAttentionLaunch<T>(                                             \
+      const int batchSize, const int sequenceLength, const int numHeads, const int headSize,       \
+      const T* query, const T* key, const T* value, const T* mask, const T* bias, T* output,      \
+      cudaStream_t stream, bool isLastKernelInvocation);                                            \
+  template void decoderMaskedMultiheadAttentionLaunch<T>(                                             \
+      const int batchSize, const int sequenceLength, const int numHeads, const int headSize,       \
+      const T* query, const T* key, const T* value, const T* mask, const T* bias, T* output,      \
+      cudaStream_t stream, bool isLastKernelInvocation, int64_t workspaceSize, void* workspace);  \
