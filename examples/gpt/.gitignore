@@ -1,3 +1,16 @@
-gpt*
-*.log
-c-model
+#!/bin/bash
+
+# Regular expressions for file patterns
+gpt_regex='gpt.*'
+log_regex='.*\.log'
+c_model_regex='c-model'
+
+# Loop through all files in the current directory
+for file in *; do
+    # Check if the file matches any of the patterns
+    if [[ $file =~ $gpt_regex || $file =~ $log_regex || $file =~ $c_model_regex ]]; then
+        # If it matches, print the filename
+        echo "File found: $file"
+    fi
+done
+
