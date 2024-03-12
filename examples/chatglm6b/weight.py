@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import configparser
 import time
 from pathlib import Path
@@ -24,26 +25,15 @@ from tensorrt_llm.functional import is_gated_activation
 from tensorrt_llm.models import ChatGLM6BHeadModel
 from tensorrt_llm.quantization import QuantMode
 
-
-def gen_suffix(rank, use_smooth_quant, quant_per_channel):
-    suffix = f"{rank}.bin"
-    if use_smooth_quant:
-        sq_prefix = "int8."
-        if quant_per_channel:
-            sq_prefix += "col."
-        suffix = sq_prefix + suffix
-    return suffix
-
-
 def extract_layer_idx(name):
-    ss = name.split('.')
-    for s in ss:
+    """Extract layer index from a name."""
+    for s in name.split('.'):
         if s.isdigit():
             return s
     return None
 
-
 def split(v, tp_size, idx, dim=0):
+    """Split a tensor along a dimension."""
     if tp_size == 1:
         return v
     if len(v.shape) == 1:
@@ -52,8 +42,8 @@ def split(v, tp_size, idx, dim=0):
         return np.ascontiguousarray(np.split(v, tp_size, axis=dim)[idx])
     return None
 
-
 def parse_ft_config(ini_file):
+    """Parse fine-tuning configuration."""
     chatglm6b_config = configparser.ConfigParser()
     chatglm6b_config.read(ini_file)
 
@@ -82,12 +72,12 @@ def parse_ft_config(ini_file):
                                                    fallback=False)
     return n_embd, n_head, n_layer, n_positions, vocab_size, do_layer_norm_before, hidden_act, rotary_pct, bias, inter_size, multi_query_mode
 
-
-def load_from_ft(chatglm6bModel: ChatGLM6BHeadModel,
+def load_from_ft(chatglm6bModel,
                  dir_path,
                  rank=0,
                  tensor_parallel=1,
                  fp16=False):
+    """Load weights from fine-tuning."""
     tensorrt_llm.logger.info('Loading weights from FT...')
     tik = time.time()
 
@@ -96,11 +86,11 @@ def load_from_ft(chatglm6bModel: ChatGLM6BHeadModel,
         plugin_weight_only_quant_type = torch.int8
     elif quant_mode.is_int4_weight_only():
         plugin_weight_only_quant_type = torch.quint4x2
-    n_embd, n_head, n_layer, n_positions, vocab_size, do_layer_norm_before, hidden_act, rotary_pct, bias, inter_size, multi_query_mode = parse_ft_config(
-        Path(dir_path) / 'config.ini')
+
     np_dtype = np.float16 if fp16 else np.float32
 
     def fromfile(dir_path, name, shape=None, dtype=None):
+        """Load a weight from a file."""
         dtype = np_dtype if dtype is None else dtype
         p = dir_path + '/' + name
         if Path(p).exists():
@@ -119,5 +109,6 @@ def load_from_ft(chatglm6bModel: ChatGLM6BHeadModel,
                                       per_channel,
                                       is_qkv=False,
                                       rank=None):
+        """Set smoothquant scale factors."""
         suffix = "bin"
-
+        # ... (rest of the function)
