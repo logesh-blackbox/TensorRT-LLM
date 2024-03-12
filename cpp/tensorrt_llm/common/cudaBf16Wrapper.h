@@ -19,3 +19,8 @@
 #ifdef ENABLE_BF16
 #include <cuda_bf16.h>
 #endif
+
+#ifdef ENABLE_FP16
+#include <cuda_fp16.h>
+#endif
+
