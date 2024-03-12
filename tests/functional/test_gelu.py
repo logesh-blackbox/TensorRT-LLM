@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import unittest
 
 import numpy as np
@@ -40,23 +41,35 @@ class TestFunctional(unittest.TestCase):
         builder = tensorrt_llm.Builder()
         net = builder.create_network()
         with tensorrt_llm.net_guard(net):
+            # Import the default TRT network
             network = tensorrt_llm.default_trtnet()
+
+            # Define the input tensor
             x = Tensor(name='x',
                        shape=x_shape,
                        dtype=tensorrt_llm.str_dtype_to_trt(dtype))
+
+            # Compute the GELU activation using the functional API
             output = tensorrt_llm.functional.gelu(x).trt_tensor
+
+            # Set the output tensor name
             output.name = 'output'
+
+            # Mark the output tensor
             network.mark_output(output)
 
-        # trt run
+        # Build the TensorRT engine
         build_engine = EngineFromNetwork((builder.trt_builder, net.trt_network))
+
+        # Create a TRT runner
         with TrtRunner(build_engine) as runner:
+            # Perform inference
             outputs = runner.infer(feed_dict={'x': x_data.numpy()})
 
-        # pytorch run
+        # Perform the reference PyTorch computation
         ref = torch.nn.functional.gelu(x_data)
 
-        # compare diff
+        # Compare the results
         np.testing.assert_allclose(ref.cpu().numpy(),
                                    outputs['output'],
                                    atol=1e-3)
