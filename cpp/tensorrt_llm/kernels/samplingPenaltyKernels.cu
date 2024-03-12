@@ -116,4 +116,4 @@ __global__ void applyTemperaturePenalty<half2>(half2* logits, const half2* bias,
         // Load the logit value.
         half2 logit = vocab_idx < half_vocab_size ? __ldg(&logits[index]) : mask_val;
 
-        // Check if the index is
+        //
