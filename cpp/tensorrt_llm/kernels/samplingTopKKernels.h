@@ -23,33 +23,62 @@ namespace tensorrt_llm
 namespace kernels
 {
 
+/**
+ * @brief Performs Top-K sampling on the given logits.
+ *
+ * This function invokes the Top-K sampling kernel for a single sequence.
+ *
+ * @tparam T The data type of the logits.
+ * @param workspace The pointer to the workspace memory.
+ * @param workspace_size The size of the workspace memory.
+ * @param log_probs The pointer to the log probabilities.
+ * @param ids The pointer to the output IDs.
+ * @param sequence_length The length of the sequence.
+ * @param finished_buf The buffer to store the finished flag.
+ * @param cum_log_probs The pointer to the cumulative log probabilities.
+ * @param output_log_probs The pointer to the output log probabilities.
+ * @param curandstate The pointer to the curand state.
+ * @param top_k The value of top-k.
+ * @param top_p The value of top-p.
+ * @param vocab_size_padded The padded vocabulary size.
+ * @param end_ids The pointer to the end IDs.
+ * @param stream The CUDA stream.
+ * @param batch_size The batch size.
+ * @param skip_decode A boolean flag indicating whether to skip decoding.
+ */
 template <typename T>
 void invokeTopKSampling(void* workspace, size_t& workspace_size, const T* log_probs, int** ids, int* sequence_length,
     bool* finished_buf, float* cum_log_probs, float* output_log_probs, curandState_t* curandstate, const int top_k,
     const float top_p, const int vocab_size_padded, const int* end_ids, cudaStream_t stream, const int batch_size,
-    const bool* skip_decode);
+    const bool* skip_decode)
+{
+    // Check if the workspace size is sufficient.
+    if (workspace_size < tensorrt_llm::kernels::getWorkspaceSize<T>())
+    {
+        throw std::runtime_error("Insufficient workspace size for TopKSampling.");
+    }
 
-template <typename T>
-void invokeBatchTopKSampling(void* workspace, size_t& workspace_size, const T* log_probs, int** ids,
-    int* sequence_lengths, bool* finished, float* cum_log_probs, float* output_log_probs, curandState_t* curandstate,
-    const int max_top_k, const int* top_ks, const float top_p, const float* top_ps, const int vocab_size_padded,
-    const int* end_ids, cudaStream_t stream, const int batch_size, const bool* skip_decode);
+    // Call the Top-K sampling kernel.
+    tensorrt_llm::kernels::topKSampling<<<1, 1, 0, stream>>>(
+        workspace, log_probs, ids, sequence_length, finished_buf, cum_log_probs, output_log_probs, curandstate, top_k,
+        top_p, vocab_size_padded, end_ids, skip_decode);
 
-void invokeCurandInitialize(
-    curandState_t* state, const size_t batch_size, unsigned long long random_seed, cudaStream_t stream);
+    // Update the workspace size.
+    workspace_size = tensorrt_llm::kernels::getWorkspaceSize<T>();
+}
 
-void invokeCurandBatchInitialize(
-    curandState_t* states, const size_t batch_size, const unsigned long long* random_seeds, cudaStream_t stream);
-
-template <typename T>
-void invokeAddBiasEndMask(T* logits, const T* bias, const int* end_ids, const bool* finished, const int batch_size,
-    const int vocab_size, const int vocab_size_padded, cudaStream_t stream);
-
-template <typename T>
-void invokeTopKTopPSampling(void* workspace, size_t& workspace_size, int** output_ids, const T* logits,
-    int* sequence_lengths, bool* finished_buf, float* cum_log_probs, float* output_log_probs,
-    curandState_t* curandstate, const int batch_size, const int top_k, const float top_p, const int vocab_size_padded,
-    const int* end_ids, cudaStream_t stream);
-
-} // namespace kernels
-} // namespace tensorrt_llm
+/**
+ * @brief Performs batch Top-K sampling on the given logits.
+ *
+ * This function invokes the batch Top-K sampling kernel for multiple sequences.
+ *
+ * @tparam T The data type of the logits.
+ * @param workspace The pointer to the workspace memory.
+ * @param workspace_size The size of the workspace memory.
+ * @param log_probs The pointer to the log probabilities.
+ * @param ids The pointer to the output IDs.
+ * @param sequence_lengths The lengths of the sequences.
+ * @param finished The buffer to store the finished flags.
+ * @param cum_log_probs The pointer to the cumulative log probabilities.
+ * @param output_log_probs The pointer to the output log probabilities.
+ *
