@@ -1,17 +1,9 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.  All rights reserved.
+ * This code includes a templated class named CutlassFpAIntBGemmRunner, which is used for performing GEMM (General Matrix Multiplication) operations with half-precision floating-point (FP16) data type (fpA) and 4-bit unsigned integer data type with 4 elements packed into one integer (uint4b_t) (intB).
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * The class is implemented using Cutlass, a CUDA template library for high-performance linear algebra. The GEMM operation is performed using the WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS quantization scheme.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * The code is licensed under the Apache License, Version 2.0.
  */
 
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/fpA_intB_gemm_template.h"
@@ -22,8 +14,10 @@ namespace kernels
 {
 namespace cutlass_kernels
 {
+// The templated class CutlassFpAIntBGemmRunner is defined here.
 template class CutlassFpAIntBGemmRunner<half, cutlass::uint4b_t,
     cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS>;
 } // namespace cutlass_kernels
 } // namespace kernels
 } // namespace tensorrt_llm
+
