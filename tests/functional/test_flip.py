@@ -45,8 +45,10 @@ class TestFunctional(unittest.TestCase):
 
         build_engine = EngineFromNetwork((builder.trt_builder, net.trt_network))
         with TrtRunner(build_engine) as runner:
-            outputs = runner.infer(feed_dict={'x': x_data.numpy()})
+            runner.infer(feed_dict={'x': x_data.numpy()})
+            outputs = runner.get_output_dict()
 
         ref = torch.flip(x_data, dims)
 
         np.testing.assert_allclose(ref.cpu().numpy(), outputs['output'])
+
