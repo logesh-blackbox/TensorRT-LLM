@@ -1,5 +1,41 @@
-datasets~=2.3.2
-rouge_score~=0.1.2
-sentencepiece~=0.1.99
-cpm-kernels~=1.0.11
-transformers_stream_generator~=0.0.4
+# Importing the required libraries
+import datasets # version 2.3.2
+import rouge_score # version 0.1.2
+import sentencepiece # version 0.1.99
+from cpm_kernels import Kernels # version 1.0.11
+from transformers_stream_generator import StreamGenerator # version 0.0.4
+
+# The datasets library is used for loading and managing datasets.
+# The rouge_score library is used for evaluating summaries using ROUGE metrics.
+# The sentencepiece library is used for sentence piece processing.
+# The cpm_kernels library is used for implementing CPM kernels.
+# The transformers_stream_generator library is used for generating text using transformers.
+
+
+def generate_summary(text: str, model_name: str, max_length: int, min_length: int, num_beams: int, length_penalty: float, early_stopping: bool, temperature: float):
+    # Initialize the generator
+    generator = StreamGenerator(model_name)
+
+    # Set the parameters for summary generation
+    generator.set_params(
+        max_length=max_length,
+        min_length=min_length,
+        num_beams=num_beams,
+        length_penalty=length_penalty,
+        early_stopping=early_stopping,
+        temperature=temperature
+    )
+
+    # Generate the summary
+    summary = generator.generate(text)
+
+    return summary
+
+
+def generate_summary(text: str, model_name: str, max_length: int, min_length: int, num_beams: int, length_penalty: float, early_stopping: bool, temperature: float):
+    """
+    This function generates a summary of the given text using a specified transformer model.
+
+    Parameters:
+    text (str): The input text to generate a summary for.
+    model
