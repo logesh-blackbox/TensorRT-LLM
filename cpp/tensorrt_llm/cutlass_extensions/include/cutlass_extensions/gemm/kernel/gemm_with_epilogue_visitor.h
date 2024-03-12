@@ -95,6 +95,6 @@ private:
     ElementCompute alpha_row_;
     ElementCompute alpha_col_;
 
-    Visitor visitor_;
+    Visitor visitor_{alpha_row_, alpha_col_};  // Initialize visitor in the constructor
 };
 
