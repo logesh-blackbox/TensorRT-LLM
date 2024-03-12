@@ -77,3 +77,4 @@ private:
 };
 
 } // namespace tensorrt_llm::batch_manager::batch_scheduler
+
