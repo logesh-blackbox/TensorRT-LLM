@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "quantizeTensorPlugin.h"
 #include "tensorrt_llm/kernels/quantization.h"
 
@@ -22,14 +23,18 @@ using namespace tensorrt_llm::kernels;
 using tensorrt_llm::plugins::QuantizeTensorPluginCreator;
 using tensorrt_llm::plugins::QuantizeTensorPlugin;
 
+// Constants for the plugin
 static const char* QUANTIZE_TENSOR_PLUGIN_VERSION{"1"};
 static const char* QUANTIZE_TENSOR_PLUGIN_NAME{"QuantizeTensor"};
+
+// PluginFieldCollection and PluginField for the plugin
 PluginFieldCollection QuantizeTensorPluginCreator::mFC{};
 std::vector<nvinfer1::PluginField> QuantizeTensorPluginCreator::mPluginAttributes;
 
+// Constructor for the plugin
 QuantizeTensorPlugin::QuantizeTensorPlugin() {}
 
-// Parameterized constructor
+// Parameterized constructor for the plugin
 QuantizeTensorPlugin::QuantizeTensorPlugin(const void* data, size_t length)
 {
     const char *d = reinterpret_cast<const char*>(data), *a = d;
@@ -42,6 +47,7 @@ nvinfer1::IPluginV2DynamicExt* QuantizeTensorPlugin::clone() const noexcept
     return new QuantizeTensorPlugin(*this);
 }
 
+// Returns the output dimensions for the plugin
 nvinfer1::DimsExprs QuantizeTensorPlugin::getOutputDimensions(
     int outputIndex, const nvinfer1::DimsExprs* inputs, int nbInputs, nvinfer1::IExprBuilder& exprBuilder) noexcept
 {
@@ -59,6 +65,7 @@ nvinfer1::DimsExprs QuantizeTensorPlugin::getOutputDimensions(
     return DimsExprs{};
 }
 
+// Checks if the plugin supports the given format combination
 bool QuantizeTensorPlugin::supportsFormatCombination(
     int pos, const nvinfer1::PluginTensorDesc* inOut, int nbInputs, int nbOutputs) noexcept
 {
@@ -81,17 +88,20 @@ bool QuantizeTensorPlugin::supportsFormatCombination(
     }
 }
 
+// Configures the plugin
 void QuantizeTensorPlugin::configurePlugin(const nvinfer1::DynamicPluginTensorDesc* in, int nbInputs,
     const nvinfer1::DynamicPluginTensorDesc* out, int nbOutputs) noexcept
 {
 }
 
+// Returns the workspace size for the plugin
 size_t QuantizeTensorPlugin::getWorkspaceSize(const nvinfer1::PluginTensorDesc* inputs, int nbInputs,
     const nvinfer1::PluginTensorDesc* outputs, int nbOutputs) const noexcept
 {
     return 0;
 }
 
+// Executes the plugin
 int QuantizeTensorPlugin::enqueue(const nvinfer1::PluginTensorDesc* inputDesc,
     const nvinfer1::PluginTensorDesc* outputDesc, const void* const* inputs, void* const* outputs, void* workspace,
     cudaStream_t stream) noexcept
@@ -126,109 +136,4 @@ int QuantizeTensorPlugin::enqueue(const nvinfer1::PluginTensorDesc* inputDesc,
 nvinfer1::DataType QuantizeTensorPlugin::getOutputDataType(
     int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept
 {
-    TLLM_CHECK(nbInputs == 2);
-    TLLM_CHECK(index == 0);
-    return nvinfer1::DataType::kINT8;
-}
-
-// IPluginV2 Methods
-
-const char* QuantizeTensorPlugin::getPluginType() const noexcept
-{
-    return QUANTIZE_TENSOR_PLUGIN_NAME;
-}
-
-const char* QuantizeTensorPlugin::getPluginVersion() const noexcept
-{
-    return QUANTIZE_TENSOR_PLUGIN_VERSION;
-}
-
-int QuantizeTensorPlugin::getNbOutputs() const noexcept
-{
-    return 1;
-}
-
-int QuantizeTensorPlugin::initialize() noexcept
-{
-    int deviceId = 0;
-    tensorrt_llm::common::check_cuda_error(cudaGetDevice(&deviceId));
-    tensorrt_llm::common::check_cuda_error(cudaGetDeviceProperties(&mProp, deviceId));
-    return 0;
-}
-
-void QuantizeTensorPlugin::terminate() noexcept {}
-
-size_t QuantizeTensorPlugin::getSerializationSize() const noexcept
-{
-    return 0;
-}
-
-void QuantizeTensorPlugin::serialize(void* buffer) const noexcept
-{
-    char *d = static_cast<char*>(buffer), *a = d;
-    assert(d == a + getSerializationSize());
-}
-
-void QuantizeTensorPlugin::destroy() noexcept
-{
-    // This gets called when the network containing plugin is destroyed
-    delete this;
-}
-
-///////////////
-
-QuantizeTensorPluginCreator::QuantizeTensorPluginCreator()
-{
-    // Fill PluginFieldCollection with PluginField arguments metadata
-    mPluginAttributes.clear();
-    mFC.nbFields = mPluginAttributes.size();
-    mFC.fields = mPluginAttributes.data();
-}
-
-const char* QuantizeTensorPluginCreator::getPluginName() const noexcept
-{
-    return QUANTIZE_TENSOR_PLUGIN_NAME;
-}
-
-const char* QuantizeTensorPluginCreator::getPluginVersion() const noexcept
-{
-    return QUANTIZE_TENSOR_PLUGIN_VERSION;
-}
-
-const PluginFieldCollection* QuantizeTensorPluginCreator::getFieldNames() noexcept
-{
-    return &mFC;
-}
-
-IPluginV2* QuantizeTensorPluginCreator::createPlugin(const char* name, const PluginFieldCollection* fc) noexcept
-{
-    try
-    {
-        auto* obj = new QuantizeTensorPlugin();
-        obj->setPluginNamespace(mNamespace.c_str());
-        return obj;
-    }
-    catch (const std::exception& e)
-    {
-        caughtError(e);
-    }
-    return nullptr;
-}
-
-IPluginV2* QuantizeTensorPluginCreator::deserializePlugin(
-    const char* name, const void* serialData, size_t serialLength) noexcept
-{
-    // This object will be deleted when the network is destroyed, which will
-    // call QuantizeTensorPlugin::destroy()
-    try
-    {
-        auto* obj = new QuantizeTensorPlugin(serialData, serialLength);
-        obj->setPluginNamespace(mNamespace.c_str());
-        return obj;
-    }
-    catch (const std::exception& e)
-    {
-        caughtError(e);
-    }
-    return nullptr;
-}
+    TLLM_CHECK(nbInputs == 
