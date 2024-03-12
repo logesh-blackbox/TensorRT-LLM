@@ -156,23 +156,4 @@ class ModuleList(Module):
             self._modules[str(offset + i)] = module
 
     def _get_abs_string_index(self, idx):
-        """Get the absolute index for the list of modules"""
-        idx = operator.index(idx)
-        if not (-len(self) <= idx < len(self)):
-            raise IndexError('index {} is out of range'.format(idx))
-        if idx < 0:
-            idx += len(self)
-        return str(idx)
-
-    def __getitem__(self, idx):
-        if isinstance(idx, slice):
-            return self.__class__(list(self._modules.values())[idx])
-        else:
-            return self._modules[self._get_abs_string_index(idx)]
-
-    def __setitem__(self, idx, module) -> None:
-        idx = self._get_abs_string_index(idx)
-        return setattr(self, str(idx), module)
-
-    def __len__(self):
-        return len(self._modules)
+        """Get the absolute
