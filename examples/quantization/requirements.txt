@@ -1,3 +1,36 @@
-datasets>=2.14.4
-nemo-toolkit[all]<=1.20.0,>=1.18.0
-rouge_score~=0.1.2
+# First, let's install the required packages
+!pip install datasets>=2.14.4 nemo-toolkit[all]<=1.20.0,>=1.18.0 rouge_score~=0.1.2
+
+# Now, let's import the necessary libraries
+import datasets
+import nemo
+import rouge_score
+
+# Assuming you have your text data ready in 'texts' variable
+# Here, I am just creating a simple list of texts for demonstration
+texts = ["Text 1", "Text 2", "Text 3"]
+
+# Load the pre-trained model
+model = nemo.models.nlp.summarization.BARTSummarizer.from_pretrained("facebook/bart-large-cnn")
+
+# Generate summaries for the texts
+summaries = []
+for text in texts:
+    input_dict = {"text": text}
+    summary = model.generate_summary(input_dict)
+    summaries.append(summary[0]['summary_text'])
+
+# Print the original texts and their corresponding summaries
+for text, summary in zip(texts, summaries):
+    print(f"Text: {text}\nSummary: {summary}\n")
+
+# Calculate ROUGE scores
+rouge_scorer = rouge_score.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+reference_summaries = [text for text in texts]  # Assuming the original texts are the references
+candidate_summaries = summaries
+rouge_scores = rouge_scorer.score(candidate_summaries, reference_summaries)
+
+# Print the ROUGE scores
+for name, score in rouge_scores.items():
+    print(f"{name}: {score['f']:.4f}")
+
