@@ -52,10 +52,11 @@ message(STATUS "    include path: ${CUDA_INCLUDE_DIRS}")
 add_executable(${TARGET_NAME} main.cpp)
 
 # Link your application with CUDA libraries
-target_link_libraries(${TARGET_NAME} LINK_PRIVATE ${CUDA_LIBRARIES})
-target_link_libraries(${TARGET_NAME} LINK_PRIVATE cudnn)
-target_link_libraries(${TARGET_NAME} LINK_PRIVATE nvinfer)
-target_link_libraries(${TARGET_NAME} LINK_PRIVATE nvinfer_plugin_tensorrt_llm)
+target_link_libraries(${TARGET_NAME} PRIVATE ${CUDA_LIBRARIES})
+target_link_libraries(${TARGET_NAME} PRIVATE cudnn)
+target_link_libraries(${TARGET_NAME} PRIVATE nvinfer)
+target_link_libraries(${TARGET_NAME} PRIVATE nvinfer_plugin_tensorrt_llm)
 
 # Add include directories
-target_include_directories(${TARGET_NAME} PUBLIC /usr/local/cuda/include)
+target_include_directories(${TARGET_NAME} PRIVATE ${CUDA_INCLUDE_DIRS})
+
