@@ -1,3 +1,20 @@
-92896b6be5853f40de56a35e59d588ba  libtensorrt_llm_batch_manager_static.a
-6e0de2def1f68d7cfbea7759b16bdc2f  libtensorrt_llm_batch_manager_static.pre_cxx11.a
-commit 9a0da55b3b68cca7f5405eba2cfd983d7a122953
+import os
+import subprocess
+
+def get_libtensorrt_version():
+    # Use subprocess to run git commands
+    subprocess.check_call(["git", "submodule", "update", "--init", "--recursive"])
+    subprocess.check_call(["git", "-C", "libtensorrt_llm_batch_manager", "pull"])
+
+    # Get the path to the library
+    lib_path = os.path.join(os.getcwd(), "libtensorrt_llm_batch_manager", "build", "lib", "libtensorrt_llm_batch_manager_static.a")
+
+    # Check if the library exists
+    if not os.path.exists(lib_path):
+        raise FileNotFoundError(f"Library not found at: {lib_path}")
+
+    # Print the library version
+    print(subprocess.check_output(["git", "-C", "libtensorrt_llm_batch_manager", "log", "--format=%h", "-n", "1"]).strip().decode())
+    print(subprocess.check_output(["git", "-C", "libtensorrt_llm_batch_manager", "describe", "--tags", "--abbrev=0"]).strip().decode())
+
+<|im_end|>
