@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
 #include "tensorrt_llm/common/cublasMMWrapper.h"
@@ -32,14 +33,18 @@ namespace tensorrt_llm::plugins
 class BertAttentionPlugin : public BasePlugin
 {
 public:
+    // Default constructor is deleted
     BertAttentionPlugin() = delete;
 
+    // Constructor with required parameters
     BertAttentionPlugin(int num_heads, int head_size, float q_scaling, bool qk_half_accum,
         tensorrt_llm::kernels::ContextFMHAType context_fmha_type, nvinfer1::DataType type,
         bool do_relative_attention = false, int max_distance = 0);
 
+    // Constructor for deserialization
     BertAttentionPlugin(const void* data, size_t length);
 
+    // Destructor
     ~BertAttentionPlugin() override = default;
 
     // IPluginV2DynamicExt Methods
@@ -55,6 +60,7 @@ public:
     int enqueue(const nvinfer1::PluginTensorDesc* inputDesc, const nvinfer1::PluginTensorDesc* outputDesc,
         const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream) noexcept override;
 
+    // Enqueue implementation for specific data types
     template <typename T>
     int enqueueImpl(const nvinfer1::PluginTensorDesc* inputDesc, const nvinfer1::PluginTensorDesc* outputDesc,
         const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream);
@@ -74,8 +80,10 @@ public:
     void destroy() noexcept override;
 
 private:
+    // Layer name
     const std::string mLayerName;
 
+    // Parameters for the attention mechanism
     int mNumHeads;
     int mHeadSize;
     int mMaxInputLength;
@@ -84,38 +92,37 @@ private:
     bool mRelativeAttention = false;
     int mMaxDistance = 0;
 
-    // unfused mha
+    // Unfused multi-head attention
     bool mQKHalfAccum = false;
 
-    // fmha runner (disable by default)
+    // Fused multi-head attention runner (disabled by default)
     bool mEnableContextFMHA = false;
     bool mFMHAForceFP32Acc = false;
     bool mSM = tensorrt_llm::common::getSMVersion();
 
-    // The default copy constructor will leave them as nullptr. clone() shall initialize it.
+    // Unique pointer with null copy constructor
     UniqPtrWNullCopy<tensorrt_llm::kernels::FusedMHARunnerV2> mFMHARunner;
     UniqPtrWNullCopy<tensorrt_llm::common::CublasMMWrapper> mCublasWrapper;
 };
 
+// Creator for the BertAttentionPlugin
 class BertAttentionPluginCreator : public BaseCreator
 {
 public:
     BertAttentionPluginCreator();
 
+    // Get plugin name
     const char* getPluginName() const noexcept override;
 
+    // Get plugin version
     const char* getPluginVersion() const noexcept override;
 
+    // Get field names
     const nvinfer1::PluginFieldCollection* getFieldNames() noexcept override;
 
+    // Create plugin instance
     nvinfer1::IPluginV2* createPlugin(const char* name, const nvinfer1::PluginFieldCollection* fc) noexcept override;
 
+    // Deserialize plugin
     nvinfer1::IPluginV2* deserializePlugin(
-        const char* name, const void* serialData, size_t serialLength) noexcept override;
-
-private:
-    static nvinfer1::PluginFieldCollection mFC;
-    static std::vector<nvinfer1::PluginField> mPluginAttributes;
-};
-
-} // namespace tensorrt_llm::plugins
+        const char* name, const void* serialData, size_t serialLength) noexcept
