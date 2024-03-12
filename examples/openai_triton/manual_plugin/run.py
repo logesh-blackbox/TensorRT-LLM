@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import argparse
 import json
 import math
@@ -25,7 +26,7 @@ from tensorrt_llm import profiler
 from tensorrt_llm._utils import (str_dtype_to_torch, str_dtype_to_trt,
                                  trt_dtype_to_torch)
 from tensorrt_llm.logger import logger
-from tensorrt_llm.runtime.session import Session, TensorInfo
+from tensorrt_llm.runtime.session import Session
 
 
 def run(engine_dir,
@@ -132,36 +133,4 @@ def run(engine_dir,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--batch_size', type=int, default=4)
-    parser.add_argument('--seq_len', type=int, default=128)
-    parser.add_argument('--num_heads', type=int, default=8)
-    parser.add_argument('--head_size', type=int, default=64)
-    parser.add_argument('--log_level', type=str, default='info')
-    parser.add_argument(
-        '--engine_dir',
-        type=Path,
-        default='outputs',
-        help='The directory where serialized engine files locate.')
-    parser.add_argument(
-        '--benchmark',
-        action='store_true',
-        help='Do performance benchmark compared to triton baseline.')
-    args = parser.parse_args()
-
-    logger.set_level(args.log_level)
-    logger.info('Parameters'.center(40, '='))
-    for k, v in vars(args).items():
-        logger.info(f' - {k.ljust(15, ".")}: {v}')
-    logger.info(''.center(40, '='))
-
-    assert args.engine_dir.exists(), \
-        f"Engine file {str(args.engine_dir)} doesn't exists."
-
-    logger.info('Inference using the built TensorRT engine.')
-    run(args.engine_dir,
-        args.batch_size,
-        args.seq_len,
-        args.num_heads,
-        args.head_size,
-        do_benchmark=args.benchmark)
-    logger.info('Done.')
+    parser.add_argument('
