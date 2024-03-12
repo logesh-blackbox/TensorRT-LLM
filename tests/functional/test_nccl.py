@@ -128,19 +128,4 @@ class TestCommunicationPlugin(unittest.TestCase):
             output = torch.zeros_like(input)
 
             stream = torch.cuda.current_stream()
-            feed_dict = {'x': input, 'workspace': workspace}
-
-            session = tllm.runtime.Session.from_engine(build_engine())
-            session.run(inputs=feed_dict,
-                        outputs={"output": output},
-                        stream=stream.cuda_stream)
-            torch.cuda.synchronize()
-
-        self.assertTrue(
-            torch.allclose(output.cpu(),
-                           (self.mapping.tp_size**(inner_loop - 1)) *
-                           allreduce_ref.cpu()))
-
-
-if __name__ == "__main__":
-    unittest.main()
+            feed_dict = {'x':
