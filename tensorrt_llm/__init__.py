@@ -12,28 +12,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import tensorrt_llm.functional as functional
-import tensorrt_llm.models as models
-import tensorrt_llm.quantization as quantization
-import tensorrt_llm.runtime as runtime
-import tensorrt_llm.tools as tools
 
-from ._common import _init, default_net, default_trtnet, precision
-# Disable flake8 on the line below because mpi_rank is not used in tensorrt_llm project
-# but may be called in dependencies (such as examples)
-from ._utils import mpi_rank, mpi_world_size, str_dtype_to_trt  # NOQA
-from .builder import Builder, BuilderConfig
-from .functional import Tensor, constant
-from .logger import logger
-from .mapping import Mapping
-from .module import Module
-from .network import Network, net_guard
-from .parameter import Parameter
+import tensorrt_llm.functional as functional  # Functional API for building models
+import tensorrt_llm.models as models  # Pre-defined models
+import tensorrt_llm.quantization as quantization  # Quantization utilities
+import tensorrt_llm.runtime as runtime  # Runtime utilities
+import tensorrt_llm.tools as tools  # Miscellaneous utilities
 
+# Internal imports
+from ._common import _init, default_net, default_trtnet, precision  # Configuration and utilities
+from ._utils import mpi_rank, mpi_world_size, str_dtype_to_trt  # MPI utilities and data type conversions
+from .builder import Builder, BuilderConfig  # Model builder and configuration
+from .functional import Tensor  # Tensor class for model building
+from .logger import logger  # Logger
+from .mapping import Mapping  # Mapping between TensorRT and Torch data types
+from .module import Module  # Torch-like module for TensorRT engines
+from .network import Network, net_guard  # Network class for model building
+from .parameter import Parameter  # Parameter class for model building
+
+# Export all public names
 __all__ = [
     'logger',
     'str_dtype_to_trt',
-    'str_dtype_to_torch'
+    'str_dtype_to_torch',
     'mpi_rank',
     'mpi_world_size',
     'constant',
@@ -55,4 +56,5 @@ __all__ = [
     'tools',
 ]
 
+# Initialize logging
 _init(log_level="error")
