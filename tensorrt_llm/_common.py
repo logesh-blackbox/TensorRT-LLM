@@ -16,7 +16,6 @@
 import contextlib
 import platform
 from pathlib import Path
-
 import torch
 
 from ._utils import str_dtype_to_trt
@@ -61,7 +60,7 @@ def default_net():
     """
     Returns the default network instance.
     """
-    assert net, "Use builder to create network first, and use `set_network` or `net_guard` to set it to default"
+    assert net is not None, "Use builder to create network first, and use `set_network` or `net_guard` to set it to default"
     return net
 
 
@@ -69,7 +68,8 @@ def default_trtnet():
     """
     Returns the default TensorRT network instance.
     """
-    return default_net().trt_network
+    assert hasattr(net, 'trt_network'), "The default network does not have a trt_network attribute"
+    return net.trt_network
 
 
 def set_network(network):
@@ -93,6 +93,8 @@ def switch_net_dtype(cur_dtype):
     Returns:
         prev_dtype (torch.dtype): The previous data type of the default network.
     """
+    if not isinstance(cur_dtype, torch.dtype):
+        cur_dtype = torch.dtype(cur_dtype)
     prev_dtype = default_net().dtype
     default_net().dtype = cur_dtype
     return prev_dtype
@@ -113,5 +115,12 @@ def precision(dtype):
             pass
         ```
     """
-    if isinstance(dtype, str):
-        dtype = str_dtype_to_tr
+    if not isinstance(dtype, torch.dtype):
+        dtype = torch.dtype(dtype)
+    prev_dtype = default_net().dtype
+    default_net().dtype = dtype
+    try:
+        yield
+    finally:
+        default_net().dtype = prev_dtype
+
