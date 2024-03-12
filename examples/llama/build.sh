@@ -1,18 +1,4 @@
-Here's a commented version of your code:
-
-python build.py --model_dir glaiveai/glaive-coder-7b \
-		--dtype float16 \
-		--use_gpt_attention_plugin float16 \
-		--enable_context_fmha \
-		--use_gemm_plugin float16 \
-		--rotary_base  1000000 \
-		--vocab_size 32016 \
-		--max_batch_size 128 \
-		--int8_kv_cache \
-        --use_weight_only \
-		--output_dir ./glaive_multitask_tensorrt
-
-# This script is used to build a model using the specified configuration.
+# Build the model using the specified configuration.
 # The model will be saved in the specified output directory.
 
 # Parameters:
@@ -27,3 +13,16 @@ python build.py --model_dir glaiveai/glaive-coder-7b \
 # int8_kv_cache: Whether to use int8 key-value cache.
 # use_weight_only: Whether to use weight-only quantization.
 # output_dir: The directory where the built model will be saved.
+
+python build.py \
+    --model_dir glaiveai/glaive-coder-7b \
+    --dtype float16 \
+    --use_gpt_attention_plugin float16 \
+    --enable_context_fmha \
+    --use_gemm_plugin float16 \
+    --rotary_base 1000000 \
+    --vocab_size 32016 \
+    --max_batch_size 128 \
+    --int8_kv_cache \
+    --use_weight_only \
+    --output_dir ./glaive_multitask_tensorrt
