@@ -33,106 +33,119 @@ namespace gemm
 namespace kernel
 {
 
+// Base template for MixedGemmArchTraits
 template <typename TypeA, typename TypeB, typename arch, typename Enable = void>
 struct MixedGemmArchTraits
 {
 };
 
+// Specialization for float, float, arch
 template <typename arch>
 struct MixedGemmArchTraits<float, float, arch>
 {
+    // Number of stages for the kernel
     static constexpr int Stages = 2;
+
+    // Operator class for the kernel
     using OperatorClass = cutlass::arch::OpClassSimt;
+
+    // Accumulator type for the kernel
     using AccType = float;
+
+    // Layout for matrix B
     using LayoutB = cutlass::layout::RowMajor;
 
+    // Elements per access for matrix A
     static constexpr int ElementsPerAccessA = 1;
+
+    // Elements per access for matrix B
     static constexpr int ElementsPerAccessB = 1;
+
+    // Elements per access for matrix C
     static constexpr int ElementsPerAccessC = 1;
+
+    // ThreadblockK for the kernel
     static constexpr int ThreadblockK = 8;
+
+    // Instruction shape for the kernel
     using InstructionShape = cutlass::gemm::GemmShape<1, 1, 1>;
 
+    // Operator for the kernel
     using Operator = cutlass::arch::OpMultiplyAdd;
 };
 
-// ========================= Volta Traits ===========================
-// Volta will always dequantize after the global memory load.
-// This will instantiate any HMMA tensorcore kernels for Volta.
-// Note that volta does not have native bfloat support so weights and activations will be casted to fp16
-// and compute will happen in fp16 then will be converted for bf16 output.
+// Specialization for Volta architecture
 template <typename TypeA, typename TypeB>
 struct MixedGemmArchTraits<TypeA, TypeB, cutlass::arch::Sm70,
     typename cutlass::platform::enable_if<cutlass::platform::is_same<TypeA, cutlass::half_t>::value
         || cutlass::platform::is_same<TypeA, cutlass::bfloat16_t>::value>::type>
 {
 private:
+    // Layout details for matrix B
     using LayoutDetails = LayoutDetailsB<TypeB, cutlass::arch::Sm70>;
 
 public:
+    // ThreadblockK for the kernel
     static constexpr int ThreadblockK = LayoutDetails::ThreadblockK;
 
+    // Operator class for the kernel
     using OperatorClass = cutlass::arch::OpClassTensorOp;
+
+    // Accumulator type for the kernel
     using AccType = float;
+
+    // Layout for matrix B
     using LayoutB = typename LayoutDetails::Layout;
 
+    // Elements per access for matrix A
     static constexpr int ElementsPerAccessA = 128 / cutlass::sizeof_bits<TypeA>::value;
+
+    // Elements per access for matrix B
     static constexpr int ElementsPerAccessB = LayoutDetails::ElementsPerAccess;
+
+    // Elements per access for matrix C
     static constexpr int ElementsPerAccessC = 128 / cutlass::sizeof_bits<TypeA>::value;
+
+    // Instruction shape for the kernel
     using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;
 
+    // Operator for the kernel
     using Operator = typename LayoutDetails::Operator;
 };
 
-// ======================= Turing Traits ==============================
-// Note that turing does not have native bfloat support so weights and activations will be casted to fp16
-// and compute will happen in fp16 then will be converted for bf16 output.
+// Specialization for Turing architecture
 template <typename TypeA, typename TypeB>
 struct MixedGemmArchTraits<TypeA, TypeB, cutlass::arch::Sm75,
     typename cutlass::platform::enable_if<cutlass::platform::is_same<TypeA, cutlass::half_t>::value
         || cutlass::platform::is_same<TypeA, cutlass::bfloat16_t>::value>::type>
 {
 private:
+    // Layout details for matrix B
     using LayoutDetails = LayoutDetailsB<TypeB, cutlass::arch::Sm75>;
 
 public:
+    // ThreadblockK for the kernel
     static constexpr int ThreadblockK = LayoutDetails::ThreadblockK;
 
+    // Operator class for the kernel
     using OperatorClass = cutlass::arch::OpClassTensorOp;
+
+    // Accumulator type for the kernel
     using AccType = float;
+
+    // Layout for matrix B
     using LayoutB = typename LayoutDetails::Layout;
 
+    // Elements per access for matrix A
     static constexpr int ElementsPerAccessA = 128 / cutlass::sizeof_bits<TypeA>::value;
+
+    // Elements per access for matrix B
     static constexpr int ElementsPerAccessB = LayoutDetails::ElementsPerAccess;
+
+    // Elements per access for matrix C
     static constexpr int ElementsPerAccessC = 128 / cutlass::sizeof_bits<TypeA>::value;
+
+    // Instruction shape for the kernel
     using InstructionShape = cutlass::gemm::GemmShape<16, 8, 8>;
 
-    using Operator = typename LayoutDetails::Operator;
-};
-
-// ======================= Ampere Traits ==============================
-template <typename TypeA, typename TypeB>
-struct MixedGemmArchTraits<TypeA, TypeB, cutlass::arch::Sm80,
-    typename cutlass::platform::enable_if<cutlass::platform::is_same<TypeA, cutlass::half_t>::value
-        || cutlass::platform::is_same<TypeA, cutlass::bfloat16_t>::value>::type>
-{
-private:
-    using LayoutDetails = LayoutDetailsB<TypeB, cutlass::arch::Sm80>;
-
-public:
-    static constexpr int ThreadblockK = LayoutDetails::ThreadblockK;
-
-    using OperatorClass = cutlass::arch::OpClassTensorOp;
-    using AccType = float;
-    using LayoutB = typename LayoutDetails::Layout;
-
-    static constexpr int ElementsPerAccessA = 128 / cutlass::sizeof_bits<TypeA>::value;
-    static constexpr int ElementsPerAccessB = LayoutDetails::ElementsPerAccess;
-    static constexpr int ElementsPerAccessC = 128 / cutlass::sizeof_bits<TypeA>::value;
-    using InstructionShape = cutlass::gemm::GemmShape<16, 8, 16>;
-
-    using Operator = typename LayoutDetails::Operator;
-};
-
-} // namespace kernel
-} // namespace gemm
-} // namespace cutlass
+    // Operator for the kernel
