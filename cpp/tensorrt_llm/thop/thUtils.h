@@ -72,11 +72,24 @@ inline T get_val(torch::Tensor& t, int idx)
 std::vector<size_t> convert_shape(torch::Tensor tensor);
 
 template <typename T>
-tensorrt_llm::common::Tensor convert_tensor(torch::Tensor tensor);
+tensorrt_llm::common::Tensor convert_tensor(torch::Tensor tensor)
+{
+    return convert_tensor<T>(tensor, tensorrt_llm::common::MemoryType::DEVICE);
+}
 
 template <typename T>
-tensorrt_llm::common::Tensor convert_tensor(torch::Tensor tensor, tensorrt_llm::common::MemoryType memory_type);
+tensorrt_llm::common::Tensor convert_tensor(torch::Tensor tensor, tensorrt_llm::common::MemoryType memory_type)
+{
+    auto shape = convert_shape(tensor);
+    auto size = sizeBytes(tensor);
+    auto data_ptr = get_ptr<T>(tensor);
+    return tensorrt_llm::common::Tensor(shape, size, memory_type, data_ptr);
+}
 
-size_t sizeBytes(torch::Tensor tensor);
+size_t sizeBytes(torch::Tensor tensor)
+{
+    return tensor.numel() * tensor.element_size();
+}
 
 } // namespace torch_ext
+
