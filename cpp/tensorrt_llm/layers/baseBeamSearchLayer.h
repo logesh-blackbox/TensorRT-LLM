@@ -1,3 +1,6 @@
+
+
+
 /*
  * Copyright (c) 2019-2023, NVIDIA CORPORATION.  All rights reserved.
  *
@@ -40,20 +43,27 @@ template <typename T>
 class BaseBeamSearchLayer : public BaseLayer
 {
 public:
+    // Declare a type alias for SetupParams
     using SetupParams = DecodingSetupParams;
 
+    // Constructor with parameters for initializing the base beam search layer
     BaseBeamSearchLayer(size_t vocab_size, size_t vocab_size_padded, cudaStream_t stream, tc::IAllocator* allocator,
         bool is_free_buffer_after_forward);
 
+    // Copy constructor for the base beam search layer
     BaseBeamSearchLayer(BaseBeamSearchLayer<T> const& beam_search_layer);
 
+    // Destructor for the base beam search layer
     ~BaseBeamSearchLayer() override;
 
+    // Type alias for SoftmaxParams
     using SoftmaxParams = DecodingParams;
 
+    // ForwardParams class declaration with mandatory and optional parameters
     class ForwardParams : public SoftmaxParams
     {
     public:
+        // Constructor with mandatory and optional parameters
         ForwardParams(
             int step, int ite, tc::Tensor logits, tc::Tensor endIds, tc::Tensor src_cache_indirection, int max_seq_len)
             : SoftmaxParams(step, ite, std::move(logits), std::move(endIds))
@@ -62,39 +72,44 @@ public:
         {
         }
 
-        // mandatory parameters
+        // Mandatory parameters
         int max_seq_len;
         tc::Tensor src_cache_indirection; // [local_batch_size, beam_width, max_seq_len]
 
-        // optional parameters
+        // Optional parameters
         std::optional<tc::Tensor> embedding_bias; // [vocab_size_padded]
         std::optional<tc::Tensor> input_lengths;  // [local_batch_size * beam_width]
     };
 
+    // BeamSearchOutputParams class declaration with mandatory and optional parameters
     class BeamSearchOutputParams : public DecodingOutputParams
     {
     public:
-        explicit BeamSearchOutputParams(tc::Tensor outputIds, tc::Tensor parentIds, tc::Tensor tgt_cache_indirection)
+        // Constructor with mandatory and optional parameters
+        BeamSearchOutputParams(tc::Tensor outputIds, tc::Tensor parentIds, tc::Tensor tgt_cache_indirection)
             : DecodingOutputParams{std::move(outputIds)}
             , parent_ids{std::move(parentIds)}
             , tgt_cache_indirection{std::move(tgt_cache_indirection)}
         {
         }
 
+        // Mandatory parameters
         tc::Tensor parent_ids;     // [max_seq_len, batch_size * beam_width], necessary in beam search
         tc::Tensor
             tgt_cache_indirection; // [local_batch_size, beam_width, max_seq_len], the k/v cache index for beam search
         std::shared_ptr<kernels::BeamHypotheses>
             beamHypotheses;        // a special structure which maintains some pointers of beam search
 
+        // Optional parameter
         tc::Tensor
             parent_ids_ptr; // [batch_size] int*, each array is [beam_width, max_seq_len], necessary in beam search
     };
 
+    // Forward method implementation for beam search
     void forward(BeamSearchOutputParams& outputs, ForwardParams const& params);
 
 protected:
-    // meta data
+    // Meta data declaration
     size_t vocab_size_;
     size_t vocab_size_padded_;
 
@@ -106,18 +121,19 @@ protected:
     float mRepetitionPenalty;
     tensorrt_llm::kernels::RepetitionPenaltyType mRepetitionPenaltyType;
 
+    // AllocateBuffer method declaration for buffer allocation
     virtual void allocateBuffer(size_t batch_size, size_t beam_width) = 0;
 
+    // InvokeSoftMax method declaration for softmax computation
     virtual void invokeSoftMax(BeamSearchOutputParams& outputs, SoftmaxParams const& params) = 0;
 
+    // SetupBase method implementation for setting up base parameters
     void setupBase(SetupParams const& setupParams);
 
 private:
+    // FreeBuffer method implementation for freeing the buffer
     void freeBuffer();
 };
 
-void update_indir_cache_kernelLauncher(int* tgt_indir_cache, const int* src_indir_cache, const int* beam_ids,
-    const bool* finished, int batch_dim, int beam_width, int max_seq_len, int ite, cudaStream_t stream);
-
-} // namespace layers
-} // namespace tensorrt_llm
+// Kernel launcher for updating indirection cache
+void update_indir_cache_kernelLauncher(int* tgt_indir_cache, const int* src_indir_cache,
