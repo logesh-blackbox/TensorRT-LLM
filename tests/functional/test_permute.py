@@ -12,8 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
 
+import unittest
 import numpy as np
 import torch
 from parameterized import parameterized
@@ -24,7 +24,6 @@ from tensorrt_llm import Tensor
 
 
 class TestFunctional(unittest.TestCase):
-
     def setUp(self):
         tensorrt_llm.logger.set_level('error')
 
@@ -39,22 +38,31 @@ class TestFunctional(unittest.TestCase):
         # construct trt network
         builder = tensorrt_llm.Builder()
         net = builder.create_network()
-        with tensorrt_llm.net_guard(net):
-            network = tensorrt_llm.default_trtnet()
-            x = Tensor(name='x',
-                       shape=x_shape,
-                       dtype=tensorrt_llm.str_dtype_to_trt(dtype))
-            output = tensorrt_llm.functional.permute(x, dims).trt_tensor
-            output.name = 'output'
-            network.mark_output(output)
 
-        # trt run
+        # define input tensor
+        x = Tensor(name='x',
+                   shape=x_shape,
+                   dtype=tensorrt_llm.str_dtype_to_trt(dtype))
+
+        # define output tensor
+        output = tensorrt_llm.functional.permute(x, dims).trt_tensor
+        output.name = 'output'
+
+        # mark output tensor
+        network = tensorrt_llm.default_trtnet()
+        network.mark_output(output)
+
+        # build engine
         build_engine = EngineFromNetwork((builder.trt_builder, net.trt_network))
+
+        # define trt runner
         with TrtRunner(build_engine) as runner:
+            # infer
             outputs = runner.infer(feed_dict={'x': x_data.numpy()})
 
-        # pytorch run
+        # define reference tensor
         ref = torch.permute(x_data, dims)
 
         # compare diff
         np.testing.assert_allclose(ref.cpu().numpy(), outputs['output'])
+
