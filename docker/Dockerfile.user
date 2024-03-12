@@ -14,7 +14,11 @@ ARG GROUP_NAME=root
 
 # Create the new user and group if they don't already exist
 RUN (getent group ${GROUP_ID} || groupadd --gid ${GROUP_ID} ${GROUP_NAME}) && \
-    (getent passwd ${USER_ID} || useradd --gid ${GROUP_ID} --uid ${USER_ID} --create-home --no-log-init --shell /bin/bash ${USER_NAME})
+    (getent passwd ${USER_ID} || useradd --gid ${GROUP_ID} --uid ${USER_ID} --create-home --no-log-init --shell /bin/bash --system ${USER_NAME})
 
 # Set the new user as the default user for the container
 USER ${USER_NAME}
+
+# Set the default command to run when the container starts
+CMD ["bash"]
+
