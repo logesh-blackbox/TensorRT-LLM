@@ -106,4 +106,4 @@ class UNet2DConditionModel(Module):
                 num_layers=layers_per_block,
                 in_channels=input_channel,
                 out_channels=output_channel,
-
+               
