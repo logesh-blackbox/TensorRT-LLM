@@ -29,23 +29,25 @@
 namespace tensorrt_llm::common
 {
 #if ENABLE_BF16
-static inline std::basic_ostream<char>& operator<<(std::basic_ostream<char>& stream, __nv_bfloat16 const& val)
-{
-    stream << __bfloat162float(val);
-    return stream;
-}
+    // This function converts a bfloat16 value to a float value
+    inline float __bfloat162float(const __nv_bfloat16& val)
+    {
+        return __nv_bfloat16_to_float(val);
+    }
 #endif // ENABLE_BF16
 
-static inline std::basic_ostream<char>& operator<<(std::basic_ostream<char>& stream, __half const& val)
-{
-    stream << __half2float(val);
-    return stream;
-}
+    // This function converts a half-precision float value to a single-precision float value
+    inline float __half2float(const __half& val)
+    {
+        return __half_to_float(val);
+    }
 
 #if defined(_MSC_VER)
-std::string fmtstr(char const* format, ...);
+    // Formats a string with the given format and variable arguments
+    std::string fmtstr(char const* format, ...);
 #else
-std::string fmtstr(char const* format, ...) __attribute__((format(printf, 1, 2)));
+    // Formats a string with the given format and variable arguments
+    std::string fmtstr(char const* format, ...) __attribute__((format(printf, 1, 2)));
 #endif
 
 // __PRETTY_FUNCTION__ is used for neat debugging printing but is not supported on Windows
@@ -54,44 +56,49 @@ std::string fmtstr(char const* format, ...) __attribute__((format(printf, 1, 2))
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
-template <typename U, typename TStream, typename T>
-inline TStream& arr2outCasted(TStream& out, T* arr, size_t size)
-{
-    out << "(";
-    if (size > 0)
+    // This template function writes an array of values to an output stream
+    template <typename U, typename TStream, typename T>
+    inline TStream& arr2outCasted(TStream& out, T* arr, size_t size)
     {
-        for (size_t i = 0; i < size - 1; ++i)
+        out << "(";
+        if (size > 0)
         {
-            out << static_cast<U>(arr[i]) << ", ";
+            for (size_t i = 0; i < size - 1; ++i)
+            {
+                out << static_cast<U>(arr[i]) << ", ";
+            }
+            out << static_cast<U>(arr[size - 1]);
         }
-        out << static_cast<U>(arr[size - 1]);
+        out << ")";
+        return out;
     }
-    out << ")";
-    return out;
-}
 
-template <typename TStream, typename T>
-inline TStream& arr2out(TStream& out, T* arr, size_t size)
-{
-    return arr2outCasted<T>(out, arr, size);
-}
+    // This template function writes an array of values to an output stream
+    template <typename TStream, typename T>
+    inline TStream& arr2out(TStream& out, T* arr, size_t size)
+    {
+        return arr2outCasted<T>(out, arr, size);
+    }
 
-template <typename T>
-inline std::string arr2str(T* arr, size_t size)
-{
-    std::stringstream ss;
-    return arr2out(ss, arr, size).str();
-}
+    // This function converts an array of values to a string
+    template <typename T>
+    inline std::string arr2str(T* arr, size_t size)
+    {
+        std::stringstream ss;
+        return arr2out(ss, arr, size).str();
+    }
 
-template <typename T>
-inline std::string vec2str(std::vector<T> vec)
-{
-    return arr2str(vec.data(), vec.size());
-}
+    // This function converts a vector of values to a string
+    template <typename T>
+    inline std::string vec2str(std::vector<T> vec)
+    {
+        return arr2str(vec.data(), vec.size());
+    }
 
-inline bool strStartsWith(std::string const& str, std::string const& prefix)
-{
-    return str.rfind(prefix, 0) == 0;
-}
+    // This function checks if a string starts with a given prefix
+    inline bool strStartsWith(std::string const& str, std::string const& prefix)
+    {
+        return str.rfind(prefix, 0) == 0;
+    }
 
 } // namespace tensorrt_llm::common
