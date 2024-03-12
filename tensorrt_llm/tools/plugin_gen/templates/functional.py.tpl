@@ -1,70 +1,8 @@
-{% if add_header %}
-# //header begin//
 
-import ctypes
-from collections import OrderedDict
-from pathlib import Path
-from typing import List
+This is a template for generating TensorRT LLM plugin code. The template includes a header section that can be customized with specific plugin information, such as the plugin library path and namespace. The main function, `[[ kernel_name ]]`, takes in arguments and returns tensors. The function uses the TensorRT plugin API to create a plugin instance, configure it with plugin fields, and add it to the TensorRT network. The function then returns the output tensors.
 
-import numpy as np
-import tensorrt as trt
+The template includes support for adding custom plugin fields, which can be specified in the `params` list. The plugin fields are added to a `PluginFieldCollection` object, which is then passed to the plugin creator to create the plugin instance.
 
-from tensorrt_llm._common import default_trtnet
-from tensorrt_llm._utils import str_dtype_to_trt
-from tensorrt_llm.functional import Tensor, _create_tensor
-from tensorrt_llm.module import Module
+The template also includes support for specifying input and output tensors, which can be specified in the `input_list` and `output_list` variables, respectively. These lists are used to create the input and output tensors for the plugin.
 
-TRT_LLM_PLUGIN_NAMESPACE = 'tensorrt_llm'
-
-def _load_triton_plugin_lib():
-    triton_plugin_dir = Path(__file__).parent.absolute()
-    plugin_lib = "[[ plugin_lib_path ]]"
-    handle = ctypes.CDLL(plugin_lib, mode=ctypes.RTLD_GLOBAL)
-    if handle is None:
-        raise ImportError('TensorRT-LLM Triton Plugin is unavailable')
-    handle.initLibNvInferPlugins.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
-    handle.initLibNvInferPlugins.restype = ctypes.c_bool
-    assert handle.initLibNvInferPlugins(
-        None, TRT_LLM_PLUGIN_NAMESPACE.encode('utf-8'))
-
-_load_triton_plugin_lib()
-
-# //header end//
-{% endif %}
-
-def [[ kernel_name ]]([[ arg_list ]]):
-    '''
-    Inputs:
-    {% for arg in metadata.get_params() -%}
-    - [[arg.name]]: [[arg.dtype.dtype.to('np')]]
-    {% endfor %}
-    {% for arg in metadata.get_inputs() -%}
-    - [[arg.name]]: {% if arg.is_tensor %}tensor<{%endif%}[[arg.dtype.dtype.to('np')]]>
-    {% endfor %}
-    Outputs:
-    {% for arg in metadata.get_outputs() -%}
-    - [[arg.name]]: {% if arg.is_tensor %}tensor<{%endif%}[[arg.dtype.dtype.to('np')]]>
-    {% endfor -%}
-    '''
-    plg_creator = trt.get_plugin_registry().get_plugin_creator(
-        '[[ plugin_name ]]', '[[ kernel_version ]]', TRT_LLM_PLUGIN_NAMESPACE)
-    assert plg_creator is not None
-
-    pfc = trt.PluginFieldCollection([
-        {% for arg in params -%}
-        {# input is a dict[name, np_type, trt_type ] #}
-        trt.PluginField("[[arg.name]]", np.array([ [[ arg.name ]] ], np.[[ arg.dtype.dtype.to('np') ]]),
-                        trt.PluginFieldType.[[ arg.dtype.dtype.to('trt_plugin_py') ]]),
-        {% endfor %}
-    ])
-
-    plugin = plg_creator.create_plugin("[[ plugin_name ]]", pfc)
-
-    plug_inputs = [ [[ input_list ]] ]
-    layer = default_trtnet().add_plugin_v2(plug_inputs, plugin)
-
-    return [
-        {% for id in range(num_outputs) %}
-        _create_tensor(layer.get_output([[ id ]]), layer),
-        {% endfor %}
-    ]
+The template is designed to be customized for specific plugins, and can be easily modified to include additional functionality as needed.
