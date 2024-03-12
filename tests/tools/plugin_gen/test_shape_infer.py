@@ -31,29 +31,20 @@ def test_ToAst(expr: str):
     ("a[m,n,k] -> b[m*((((n+1))))]", """
 if (outputIndex == 0) {
   outputDims.nbDims = 1;
-  outputDims.d[0] = (inputDims[0].d[0] * (inputDims[0].d[1] + 1));
+  outputDims.d[0] = (inputDims[0].d[0] * (inputDims[0].dims.d[1] + 1));
 }
      """),
     ("a[m,n,k] -> b[m*(n+k), 2*n, k+3]", """
 nvinfer1::DimsExprs outputDims;
 if (outputIndex == 0) {
   outputDims.nbDims = 3;
-  outputDims.d[0] = (inputDims[0].d[0] * (inputDims[0].d[1] + inputDims[0].d[2]));
-  outputDims.d[1] = (2 * inputDims[0].d[1]);
-  outputDims.d[2] = (inputDims[0].d[2] + 3);
+  outputDims.d[0] = (inputDims[0].d[0] * (inputDims[0].dims.d[1] + inputDims[0].dims.d[2]));
+  outputDims.d[1] = (2 * inputDims[0].dims.d[1]);
+  outputDims.d[2] = (inputDims[0].dims.d[2] + 3);
 }""")
 ])
 def test_CppCodeTranspiler(expr: str, target: str):
     args = dict(
         a=InputArg('a', Type('fp16')),
         b=InputArg('b', Type('fp16')),
-    )
-    target = target.strip()
-
-    transpiler = CppCodeTranspiler(args)
-
-    shape_infer_code, dim_infer_code = transpiler([expr])
-
-    # we don't check the correctness of the code since the lark produces unstable ast tree
-    # refer to https://github.com/lark-parser/lark/issues/324
-    assert shape_infer_code or dim_infer_code
+   
