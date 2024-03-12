@@ -18,15 +18,15 @@ from tensorrt_llm.runtime.session import Session, TensorInfo
 # from tensorrt_llm.plugin import get_engine_name
 
 
-sys.path.append('./tmp')
-from functional import fused_attention_kernel # isort:skip
-# yapf: enable
-
-
+# The get_engine_name function returns the name of the TensorRT engine file
+# based on the head size and data type.
 def get_engine_name(head_size, dtype):
     return f'fmha_{head_size}_{dtype}.engine'
 
 
+# The run function performs inference using the TensorRT engine, compares the
+# results with a reference implementation, and optionally benchmarks the
+# performance.
 def run(engine_dir,
         batch_size,
         seq_len,
@@ -41,6 +41,7 @@ def run(engine_dir,
     dtype = config['builder_config']['precision']
     serialize_path = engine_dir / get_engine_name(head_size, dtype)
 
+    # Deserialize the TensorRT engine from the file.
     with open(serialize_path, 'rb') as f:
         session = Session.from_serialized_engine(f.read())
 
@@ -135,35 +136,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--batch_size', type=int, default=4)
-    parser.add_argument('--seq_len', type=int, default=128)
-    parser.add_argument('--num_heads', type=int, default=8)
-    parser.add_argument('--head_size', type=int, default=64)
-    parser.add_argument('--log_level', type=str, default='info')
-    parser.add_argument(
-        '--engine_dir',
-        type=Path,
-        default='outputs',
-        help='The directory where serialized engine files locate.')
-    parser.add_argument(
-        '--benchmark',
-        action='store_true',
-        help='Do performance benchmark compared to triton baseline.')
-    args = parser.parse_args()
-
-    logger.set_level(args.log_level)
-    logger.info('Parameters'.center(40, '='))
-    for k, v in vars(args).items():
-        logger.info(f' - {k.ljust(15, ".")}: {v}')
-    logger.info(''.center(40, '='))
-
-    assert args.engine_dir.exists(), \
-        f"Engine file {str(args.engine_dir)} doesn't exists."
-
-    logger.info('Inference using the built TensorRT engine.')
-    run(args.engine_dir,
-        args.batch_size,
-        args.seq_len,
-        args.num_heads,
-        args.head_size,
-        do_benchmark=args.benchmark)
-    logger.info('Done.')
+    parser.add_argument('--seq_len', type=int
