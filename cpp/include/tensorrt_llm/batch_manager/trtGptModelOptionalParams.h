@@ -24,11 +24,20 @@
 namespace tensorrt_llm::batch_manager
 {
 
+/**
+ * @brief TrtGptModelOptionalParams class holds optional parameters for the GPT model.
+ */
 class TrtGptModelOptionalParams
 {
 public:
+    /**
+     * @brief SizeType is the data type used for sizes.
+     */
     using SizeType = tensorrt_llm::runtime::SizeType;
 
+    /**
+     * @brief Default constructor.
+     */
     TrtGptModelOptionalParams()
         : mMaxNumSequences(std::nullopt)
         , mMaxTokensInPagedKvCache(std::nullopt)
@@ -37,6 +46,14 @@ public:
     {
     }
 
+    /**
+     * @brief Constructor with optional parameters.
+     *
+     * @param maxNumSequences Maximum number of sequences.
+     * @param maxTokensInPagedKvCache Maximum tokens in paged KV cache.
+     * @param kvCacheFreeGpuMemFraction Fraction of GPU memory to keep free for KV cache.
+     * @param enableTrtOverlap Enable TRT overlap.
+     */
     TrtGptModelOptionalParams(std::optional<SizeType> maxNumSequences, std::optional<SizeType> maxTokensInPagedKvCache,
         std::optional<float> kvCacheFreeGpuMemFraction, std::optional<bool> enableTrtOverlap)
         : mMaxNumSequences(maxNumSequences)
@@ -46,31 +63,35 @@ public:
     {
     }
 
+    /**
+     * @brief Get the maximum tokens in paged KV cache.
+     *
+     * @return std::optional<SizeType> Maximum tokens in paged KV cache.
+     */
     [[nodiscard]] std::optional<SizeType> getMaxTokensInPagedKvCache() const
     {
         return mMaxTokensInPagedKvCache;
     }
 
+    /**
+     * @brief Get the fraction of GPU memory to keep free for KV cache.
+     *
+     * @return std::optional<float> Fraction of GPU memory to keep free for KV cache.
+     */
     [[nodiscard]] std::optional<float> getKvCacheFreeGpuMemFraction() const
     {
         return mKvCacheFreeGpuMemFraction;
     }
 
+    /**
+     * @brief Get the maximum number of sequences.
+     *
+     * @return std::optional<float> Maximum number of sequences.
+     */
     [[nodiscard]] std::optional<float> getMaxNumSequences() const
     {
         return mMaxNumSequences;
     }
 
-    [[nodiscard]] std::optional<bool> getEnableTrtOverlap() const
-    {
-        return mEnableTrtOverlap;
-    }
+    /**
 
-private:
-    std::optional<SizeType> mMaxNumSequences;
-    std::optional<SizeType> mMaxTokensInPagedKvCache;
-    std::optional<float> mKvCacheFreeGpuMemFraction;
-    std::optional<bool> mEnableTrtOverlap;
-};
-
-} // namespace tensorrt_llm::batch_manager
