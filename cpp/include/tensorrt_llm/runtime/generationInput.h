@@ -31,13 +31,17 @@ class GenerationInput
 public:
     using TensorPtr = ITensor::SharedPtr;
 
-    explicit GenerationInput(
+    GenerationInput(
         SizeType const endId, SizeType const padId, TensorPtr ids, TensorPtr lengths, bool packed = false)
         : endId{endId}
         , padId{padId}
         , ids{std::move(ids)}
         , lengths{std::move(lengths)}
         , packed{packed}
+        , maxNewTokens{}
+        , embeddingBiasOpt{}
+        , badWordsList{}
+        , stopWordsList{}
     {
         TLLM_CHECK_WITH_INFO(static_cast<bool>(this->ids), "Invalid ids tensor");
         TLLM_CHECK_WITH_INFO(static_cast<bool>(this->lengths), "Invalid lengths tensor");
@@ -51,10 +55,11 @@ public:
     bool packed;       // indicates if ids are packed or padded to maxInputLength
 
     // optional parameters
-    TensorPtr embeddingBiasOpt;           // [vocabSizePadded], on gpu
-    TensorPtr badWordsList;               // [2, badWordsLength] or [batchSize, 2, badWordsLength], on gpu
-    TensorPtr stopWordsList;              // [batchSize, 2, stopWordsLength], on gpu
     std::optional<SizeType> maxNewTokens; // max number of tokens to generate
+    std::optional<TensorPtr> embeddingBiasOpt;           // [vocabSizePadded], on gpu
+    std::optional<TensorPtr> badWordsList;               // [2, badWordsLength] or [batchSize, 2, badWordsLength], on gpu
+    std::optional<TensorPtr> stopWordsList;              // [batchSize, 2, stopWordsLength], on gpu
 };
 
 } // namespace tensorrt_llm::runtime
+
