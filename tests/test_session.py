@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import unittest
 
 import tensorrt as trt
@@ -21,17 +22,36 @@ import tensorrt_llm
 
 
 class MyAddModule(tensorrt_llm.Module):
+    """
+    A simple module that adds two input tensors element-wise.
+    """
 
     def __init__(self):
         super().__init__()
 
     def forward(self, x, y):
+        """
+        Adds two input tensors element-wise.
+
+        Args:
+            x (torch.Tensor): The first input tensor.
+            y (torch.Tensor): The second input tensor.
+
+        Returns:
+            torch.Tensor: The sum of the two input tensors.
+        """
         return x + y
 
 
 class TestSession(unittest.TestCase):
+    """
+    Test cases for the TensorRT LLM Session class.
+    """
 
     def test_session_debug_run(self):
+        """
+        Test the _debug_run method of the TensorRT LLM Session class.
+        """
         tensorrt_llm.logger.set_level('verbose')
         builder = tensorrt_llm.Builder()
         builder_config = builder.create_builder_config("test", "test")
@@ -74,3 +94,4 @@ class TestSession(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
