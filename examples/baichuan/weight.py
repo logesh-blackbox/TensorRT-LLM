@@ -1,17 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 import time
 
 import numpy as np
@@ -23,20 +9,40 @@ from tensorrt_llm.quantization import QuantMode
 
 
 def extract_layer_idx(name):
-    ss = name.split('.')
-    for s in ss:
+    """
+    Extract the layer index from the name of a parameter.
+
+    Args:
+        name (str): The name of the parameter.
+
+    Returns:
+        int: The layer index, or None if the name does not contain a layer index.
+    """
+    for s in name.split('.'):
         if s.isdigit():
-            return s
+            return int(s)
     return None
 
 
 def split(v, tp_size, idx, dim=0):
-    if tp_size == 1:
+    """
+    Split a numpy array into multiple parts along a given dimension.
+
+    Args:
+        v (numpy.ndarray): The numpy array to split.
+        tp_size (int): The number of parts to split the array into.
+        idx (int): The index of the part to return.
+        dim (int, optional): The dimension along which to split the array. Defaults to 0.
+
+    Returns:
+        numpy.ndarray: The specified part of the split array.
+    """
+    if v.size == 1:
         return v
-    if len(v.shape) == 1:
-        return np.ascontiguousarray(np.split(v, tp_size)[idx])
+    if v.ndim == 1:
+        return np.split(v, tp_size)[idx]
     else:
-        return np.ascontiguousarray(np.split(v, tp_size, axis=dim)[idx])
+        return np.split(v, tp_size, axis=dim)[idx]
 
 
 def load_from_hf_baichuan(tensorrt_llm_baichuan,
@@ -46,7 +52,7 @@ def load_from_hf_baichuan(tensorrt_llm_baichuan,
                           tensor_parallel=1,
                           dtype="float32"):
     """
-    Loads the weights from a Hugging Face Baichuan model to a TensorRT LLM Baichuan model.
+    Load the weights from a Hugging Face Baichuan model to a TensorRT LLM Baichuan model.
 
     Args:
         tensorrt_llm_baichuan (tensorrt_llm.TensorRTLLMBaichuan): The TensorRT LLM Baichuan model to load the weights into.
@@ -58,7 +64,6 @@ def load_from_hf_baichuan(tensorrt_llm_baichuan,
 
     Returns:
         None
-
     """
     assert model_version is not None
     tensorrt_llm.logger.info(
@@ -95,23 +100,27 @@ def load_from_hf_baichuan(tensorrt_llm_baichuan,
             layer_idx = extract_layer_idx(k)
             if layer_idx is None:
                 continue
-            idx = int(layer_idx)
-            if idx >= tensorrt_llm_baichuan._num_layers:
+            if layer_idx >= tensorrt_llm_baichuan._num_layers:
                 continue
             if 'input_layernorm.weight' in k:
                 tensorrt_llm_baichuan.layers[
-                    idx].input_layernorm.weight.value = v
+                    layer_idx].input_layernorm.weight.value = v
             elif 'post_attention_layernorm.weight' in k:
-                dst = tensorrt_llm_baichuan.layers[idx].post_layernorm.weight
+                dst = tensorrt_llm_baichuan.layers[layer_idx].post_layernorm.weight
                 dst.value = v
             elif 'self_attn.W_pack.weight' in k:
-                dst = tensorrt_llm_baichuan.layers[idx].attention.qkv.weight
+                dst = tensorrt_llm_baichuan.layers[layer_idx].attention.qkv.weight
                 q_emb = v.shape[0] // 3
                 model_emb = v.shape[1]
                 v = v.reshape(3, q_emb, model_emb)
-                split_v = split(v, tensor_parallel, rank, dim=1)
-                split_v = split_v.reshape(3 * (q_emb // tensor_parallel),
-                                          model_emb)
+                split_v = [
+                    split(v[i], tensor_parallel, rank, dim=1)
+                    for i in range(3)
+                ]
+                split_v = [
+                    split_v[i].reshape(q_emb // tensor_parallel, model_emb)
+                    for i in range(3)
+                ]
                 if use_weight_only:
-                    v = np.ascontiguousarray(split_v.transpose())
-                    processed_torch_weights, torch_weight_scales = torch.ops.faster
+                    v = np.stack(
+                        [np.transpose(split_v[i], (1,
