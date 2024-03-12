@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import contextlib
 import platform
 from pathlib import Path
@@ -21,6 +22,9 @@ import torch
 from ._utils import str_dtype_to_trt
 from .logger import logger
 from .plugin import _load_plugin_lib
+
+# Initialize TensorRT-LLM
+_init()
 
 net = None
 
@@ -36,15 +40,15 @@ def _init(log_level=None):
     if log_level is not None:
         logger.set_level(log_level)
 
-    # load plugin lib
+    # Load plugin library
     _load_plugin_lib()
 
-    # load FT decoder layer
+    # Load FT decoder layer
     project_dir = str(Path(__file__).parent.absolute())
     if platform.system() == "Windows":
         ft_decoder_lib = project_dir + '/libs/th_common.dll'
     else:
-        ft_decoder_lib = project_dir + '/libs/libth_common.so'
+        ft_decoder_lib = project_dir + '/libs/th_common.so'
     if ft_decoder_lib == '':
         raise ImportError('FT decoder layer is unavailable')
     torch.classes.load_library(ft_decoder_lib)
@@ -54,20 +58,41 @@ def _init(log_level=None):
 
 
 def default_net():
+    """
+    Returns the default network instance.
+    """
     assert net, "Use builder to create network first, and use `set_network` or `net_guard` to set it to default"
     return net
 
 
 def default_trtnet():
+    """
+    Returns the default TensorRT network instance.
+    """
     return default_net().trt_network
 
 
 def set_network(network):
+    """
+    Sets the default network instance.
+
+    Args:
+        network (torch.nn.Module): The network instance to be set as default.
+    """
     global net
     net = network
 
 
 def switch_net_dtype(cur_dtype):
+    """
+    Switches the default network's data type.
+
+    Args:
+        cur_dtype (torch.dtype or str): The new data type for the default network.
+
+    Returns:
+        prev_dtype (torch.dtype): The previous data type of the default network.
+    """
     prev_dtype = default_net().dtype
     default_net().dtype = cur_dtype
     return prev_dtype
@@ -75,8 +100,18 @@ def switch_net_dtype(cur_dtype):
 
 @contextlib.contextmanager
 def precision(dtype):
+    """
+    A context manager for setting and restoring the default network's data type.
+
+    Args:
+        dtype (torch.dtype or str): The new data type for the default network.
+
+    Example:
+        ```
+        with precision(torch.float16):
+            # Your code here
+            pass
+        ```
+    """
     if isinstance(dtype, str):
-        dtype = str_dtype_to_trt(dtype)
-    prev_dtype = switch_net_dtype(dtype)
-    yield
-    switch_net_dtype(prev_dtype)
+        dtype = str_dtype_to_tr
