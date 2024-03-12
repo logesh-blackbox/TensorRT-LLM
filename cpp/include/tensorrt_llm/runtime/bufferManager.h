@@ -119,38 +119,3 @@ public:
     //! \brief Copy `src` into a new `IBuffer` with a potentially different memory type.
     template <typename T>
     [[nodiscard]] IBufferPtr copyFrom(std::vector<T> const& src, MemoryType memoryType) const
-    {
-        auto buffer = allocate(memoryType, src.size(), TRTDataType<std::remove_cv_t<T>>::value);
-        copy(src.data(), *buffer);
-        return buffer;
-    }
-
-    //! \brief Copy `src` into a new `ITensor` with a potentially different memory type.
-    template <typename T>
-    [[nodiscard]] ITensorPtr copyFrom(T* src, nvinfer1::Dims dims, MemoryType memoryType) const
-    {
-        auto buffer = allocate(memoryType, dims, TRTDataType<std::remove_cv_t<T>>::value);
-        copy(src, *buffer);
-        return buffer;
-    }
-
-    //! \brief Copy `src` into a new `ITensor` with a potentially different memory type.
-    template <typename T>
-    [[nodiscard]] ITensorPtr copyFrom(std::vector<T> const& src, nvinfer1::Dims dims, MemoryType memoryType) const
-    {
-        TLLM_CHECK_WITH_INFO(src.size() == ITensor::volumeNonNegative(dims),
-            common::fmtstr("[TensorRT-LLM][ERROR] Incompatible size %lu and dims %s", src.size(),
-                ITensor::toString(dims).c_str()));
-        return copyFrom(src.data(), dims, memoryType);
-    }
-
-    //! \brief Get the underlying cuda stream.
-    [[nodiscard]] CudaStream const& getStream() const;
-
-private:
-    void static initMemoryPool(int device);
-
-    CudaStreamPtr mStream;
-};
-
-} // namespace tensorrt_llm::runtime
