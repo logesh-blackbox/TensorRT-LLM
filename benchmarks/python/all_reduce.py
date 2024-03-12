@@ -132,6 +132,4 @@ if __name__ == "__main__":
                         "-r",
                         default="256,25600000,10",
                         help="min_size,max_size,multiplicative_ratio")
-    args = parser.parse_args()
-
-    allreduce_benchmark(args.dtype, args.range)
+    args = parser.parse_
