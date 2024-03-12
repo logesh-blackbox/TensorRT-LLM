@@ -1,36 +1,31 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: Apache-2.0
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #pragma once
+
+#include <cassert>
+#include <cuda_runtime_api.h>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 
 #include "tensorrt_llm/common/cublasMMWrapper.h"
 #include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/kernels/contextFusedMultiHeadAttention/fmhaRunner.h"
 #include "tensorrt_llm/kernels/gptKernels.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
-#include <cassert>
-#include <set>
-#include <string>
-#include <vector>
+#include "tensorrt_llm/plugins/common/pluginFields.h"
+#include <cuda_runtime_api.h>
+#include <nvinfer1/IBuilder.h>
+#include <nvinfer1/IPluginV2.h>
+#include <nvinfer1/IPluginV2DynamicExt.h>
+#include <nvinfer1/ITensor.h>
+#include <nvinfer1/ITensorDesc.h>
+#include <nvinfer1/PluginField.h>
+#include <nvinfer1/PluginFieldCollection.h>
 
 namespace tensorrt_llm::plugins
 {
 
-class BertAttentionPlugin : public BasePlugin
+class BertAttentionPlugin : public nvinfer1::IPluginV2DynamicExt
 {
 public:
     // Default constructor is deleted
@@ -92,37 +87,4 @@ private:
     bool mRelativeAttention = false;
     int mMaxDistance = 0;
 
-    // Unfused multi-head attention
-    bool mQKHalfAccum = false;
-
-    // Fused multi-head attention runner (disabled by default)
-    bool mEnableContextFMHA = false;
-    bool mFMHAForceFP32Acc = false;
-    bool mSM = tensorrt_llm::common::getSMVersion();
-
-    // Unique pointer with null copy constructor
-    UniqPtrWNullCopy<tensorrt_llm::kernels::FusedMHARunnerV2> mFMHARunner;
-    UniqPtrWNullCopy<tensorrt_llm::common::CublasMMWrapper> mCublasWrapper;
-};
-
-// Creator for the BertAttentionPlugin
-class BertAttentionPluginCreator : public BaseCreator
-{
-public:
-    BertAttentionPluginCreator();
-
-    // Get plugin name
-    const char* getPluginName() const noexcept override;
-
-    // Get plugin version
-    const char* getPluginVersion() const noexcept override;
-
-    // Get field names
-    const nvinfer1::PluginFieldCollection* getFieldNames() noexcept override;
-
-    // Create plugin instance
-    nvinfer1::IPluginV2* createPlugin(const char* name, const nvinfer1::PluginFieldCollection* fc) noexcept override;
-
-    // Deserialize plugin
-    nvinfer1::IPluginV2* deserializePlugin(
-        const char* name, const void* serialData, size_t serialLength) noexcept
+    // Unfused
