@@ -56,30 +56,42 @@ public:
     Logger(Logger const&) = delete;
     void operator=(Logger const&) = delete;
 
-#if defined(_MSC_VER)
     template <typename... Args>
-    void log(Level level, char const* format, const Args&... args);
-
-    template <typename... Args>
-    void log(Level level, int rank, char const* format, const Args&... args);
-#else
-    template <typename... Args>
-    void log(Level level, char const* format, const Args&... args) __attribute__((format(printf, 3, 0)));
-
-    template <typename... Args>
-    void log(Level level, int rank, char const* format, const Args&... args) __attribute__((format(printf, 4, 0)));
-#endif
-
-    template <typename... Args>
-    void log(Level level, std::string const& format, const Args&... args)
+    void log(Level level, char const* format, const Args&... args)
     {
-        return log(level, format.c_str(), args...);
+        if (level_ <= level)
+        {
+            auto const fmt = getPrefix(level) + format;
+            auto& out = level_ < WARNING ? std::cout : std::cerr;
+            if constexpr (sizeof...(args) > 0)
+            {
+                out << fmtstr(fmt.c_str(), args...);
+            }
+            else
+            {
+                out << fmt;
+            }
+            out << std::endl;
+        }
     }
 
     template <typename... Args>
-    void log(const Level level, const int rank, const std::string& format, const Args&... args)
+    void log(Level level, int rank, char const* format, const Args&... args)
     {
-        return log(level, rank, format.c_str(), args...);
+        if (level_ <= level)
+        {
+            auto const fmt = getPrefix(level, rank) + format;
+            auto& out = level_ < WARNING ? std::cout : std::cerr;
+            if constexpr (sizeof...(args) > 0)
+            {
+                out << fmtstr(fmt.c_str(), args...);
+            }
+            else
+            {
+                out << fmt;
+            }
+            out << std::endl;
+        }
     }
 
     void log(std::exception const& ex, Level level = Level::ERROR);
@@ -125,44 +137,6 @@ private:
     }
 };
 
-template <typename... Args>
-void Logger::log(Logger::Level level, char const* format, Args const&... args)
-{
-    if (level_ <= level)
-    {
-        auto const fmt = getPrefix(level) + format;
-        auto& out = level_ < WARNING ? std::cout : std::cerr;
-        if constexpr (sizeof...(args) > 0)
-        {
-            out << fmtstr(fmt.c_str(), args...);
-        }
-        else
-        {
-            out << fmt;
-        }
-        out << std::endl;
-    }
-}
-
-template <typename... Args>
-void Logger::log(const Logger::Level level, const int rank, char const* format, const Args&... args)
-{
-    if (level_ <= level)
-    {
-        auto const fmt = getPrefix(level, rank) + format;
-        auto& out = level_ < WARNING ? std::cout : std::cerr;
-        if constexpr (sizeof...(args) > 0)
-        {
-            out << fmtstr(fmt.c_str(), args...);
-        }
-        else
-        {
-            out << fmt;
-        }
-        out << std::endl;
-    }
-}
-
 #define TLLM_LOG(level, ...) tensorrt_llm::common::Logger::getLogger()->log(level, __VA_ARGS__)
 #define TLLM_LOG_TRACE(...) TLLM_LOG(tensorrt_llm::common::Logger::TRACE, __VA_ARGS__)
 #define TLLM_LOG_DEBUG(...) TLLM_LOG(tensorrt_llm::common::Logger::DEBUG, __VA_ARGS__)
@@ -171,3 +145,4 @@ void Logger::log(const Logger::Level level, const int rank, char const* format, 
 #define TLLM_LOG_ERROR(...) TLLM_LOG(tensorrt_llm::common::Logger::ERROR, __VA_ARGS__)
 #define TLLM_LOG_EXCEPTION(ex, ...) tensorrt_llm::common::Logger::getLogger()->log(ex, ##__VA_ARGS__)
 } // namespace tensorrt_llm::common
+
