@@ -82,16 +82,32 @@ template <typename T, typename WeightType, cutlass::WeightOnlyQuantOp QuantOp>
 class CutlassFpAIntBGemmRunner : public virtual CutlassFpAIntBGemmRunnerInterface
 {
 public:
-    CutlassFpAIntBGemmRunner();
-    ~CutlassFpAIntBGemmRunner();
+    CutlassFpAIntBGemmRunner()
+    {
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, 0);
+        sm_ = prop.major;
+        multi_processor_count_ = prop.multiProcessorCount;
+    }
+
+    ~CutlassFpAIntBGemmRunner() {}
 
     void gemm(const void* A, const void* B, const void* weight_scales, void* C, int m, int n, int k,
         tkc::CutlassGemmConfig gemmConfig, char* workspace_ptr, const size_t workspace_bytes,
-        cudaStream_t stream) override;
+        cudaStream_t stream) override
+    {
+        gemm(A, B, weight_scales, nullptr, nullptr, C, m, n, k, 1, gemmConfig, workspace_ptr, workspace_bytes, stream);
+    }
 
     void gemm(const void* A, const void* B, const void* weight_scales, const void* weight_zero_points,
         const void* biases, void* C, int m, int n, int k, const int group_size, tkc::CutlassGemmConfig gemmConfig,
-        char* workspace_ptr, const size_t workspace_bytes, cudaStream_t stream) override;
+        char* workspace_ptr, const size_t workspace_bytes, cudaStream_t stream) override
+    {
+        dispatch_to_arch<tkc::CutlassGemmEpilogueTag>(
+            static_cast<const T*>(A), static_cast<const WeightType*>(B), static_cast<const T*>(weight_scales),
+            static_cast<const T*>(weight_zero_points), static_cast<const T*>(biases), static_cast<T*>(C), m, n, k,
+            group_size, gemmConfig, workspace_ptr, workspace_bytes, stream);
+    }
 
     // Disabled since the fused GEMM, activation kernels will not be used in v1.
 
@@ -100,21 +116,9 @@ public:
     //     stream);
 
     // Returns desired workspace size in bytes.
-    size_t getWorkspaceSize(const int m, const int n, const int k) override;
+    size_t getWorkspaceSize(const int m, const int n, const int k) override
+    {
+        return 0;
+    }
 
-    std::vector<tkc::CutlassGemmConfig> getConfigs() const override;
-
-private:
-    template <typename EpilogueTag>
-    void dispatch_to_arch(const T* A, const WeightType* B, const T* weight_scales, const T* weight_zero_points,
-        const T* biases, T* C, int m, int n, int k, const int group_size, tkc::CutlassGemmConfig gemm_config,
-        char* workspace_ptr, const size_t workspace_bytes, cudaStream_t stream, int* occupancy = nullptr);
-
-private:
-    int sm_;
-    int multi_processor_count_;
-};
-
-} // namespace cutlass_kernels
-} // namespace kernels
-} // namespace tensorrt_llm
+    std::vector<tkc::CutlassGem
