@@ -30,8 +30,10 @@ namespace tensorrt_llm::plugins
 class SendPlugin : public BasePlugin
 {
 public:
+    // SendPlugin constructor with target rank and data type
     SendPlugin(int tgtRank, nvinfer1::DataType type);
 
+    // SendPlugin constructor with serialized data
     SendPlugin(const void* data, size_t length);
 
     ~SendPlugin() override = default;
@@ -91,3 +93,4 @@ private:
 };
 
 } // namespace tensorrt_llm::plugins
+
