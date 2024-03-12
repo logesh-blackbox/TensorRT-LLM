@@ -28,74 +28,44 @@ namespace tensorrt_llm::runtime
 class BufferView : virtual public IBuffer
 {
 public:
-    explicit BufferView(IBuffer::SharedPtr buffer, std::size_t offset, std::size_t size)
-        : mBuffer(std::move(buffer))
-        , mOffset{offset}
-        , mSize{size}
-    {
-        if (offset > mBuffer->getSize())
-        {
-            throw std::out_of_range(std::string("offset ") + std::to_string(offset) + " exceeds buffer size "
-                + std::to_string(mBuffer->getSize()));
-        }
+    // Constructor for BufferView class, takes a shared pointer to an IBuffer, an offset, and a size.
+    // Throws an out_of_range exception if the offset or the slice (offset + size) exceeds the buffer size.
+    explicit BufferView(IBuffer::SharedPtr<IBuffer> buffer, std::size_t offset, std::size_t size);
 
-        if (offset + size > mBuffer->getSize())
-        {
-            throw std::out_of_range(std::string("slice ") + std::to_string(offset + size) + " exceeds buffer size "
-                + std::to_string(mBuffer->getSize()));
-        }
-    }
+    // Returns a pointer to the data in the buffer. If the size of the buffer is 0, returns nullptr.
+    void* data() override;
 
-    void* data() override
-    {
-        if (getSize() == 0)
-            return nullptr;
-        return mBuffer->data(mOffset);
-    }
+    // Const version of data() method.
+    void const* data() const override;
 
-    [[nodiscard]] void const* data() const override
-    {
-        if (getSize() == 0)
-            return nullptr;
-        return mBuffer->data(mOffset);
-    }
+    // Returns the size of the buffer.
+    [[nodiscard]] std::size_t getSize() const override;
 
-    [[nodiscard]] size_t getSize() const override
-    {
-        return mSize;
-    }
+    // Returns the capacity of the buffer.
+    [[nodiscard]] std::size_t getCapacity() const override;
 
-    [[nodiscard]] size_t getCapacity() const override
-    {
-        return mBuffer->getCapacity() - mOffset;
-    }
+    // Returns the data type of the buffer.
+    [[nodiscard]] nvinfer1::DataType getDataType() const override;
 
-    [[nodiscard]] nvinfer1::DataType getDataType() const override
-    {
-        return mBuffer->getDataType();
-    }
+    // Returns the memory type of the buffer.
+    [[nodiscard]] MemoryType getMemoryType() const override;
 
-    [[nodiscard]] MemoryType getMemoryType() const override
-    {
-        return mBuffer->getMemoryType();
-    }
+    // Resizes the buffer to a new size. Throws an exception if the new size is larger than the capacity.
+    void resize(std::size_t newSize) override;
 
-    void resize(std::size_t newSize) override
-    {
-        TLLM_CHECK(newSize <= getCapacity());
-        mSize = newSize;
-    }
+    // Releases the buffer.
+    void release() override;
 
-    void release() override
-    {
-        mSize = 0;
-    }
-
-    ~BufferView() override = default;
+    // Destructor.
+    ~BufferView() override;
 
 private:
-    IBuffer::SharedPtr mBuffer;
+    // Shared pointer to an IBuffer.
+    IBuffer::SharedPtr<IBuffer> mBuffer;
+
+    // Offset and size of the buffer view.
     std::size_t mOffset, mSize;
 };
 
 } // namespace tensorrt_llm::runtime
+
