@@ -23,8 +23,10 @@ namespace kernels
 namespace cutlass_kernels
 {
 
+// Instantiate the template for half
 template class CutlassInt8GemmRunner<half>;
 
 } // namespace cutlass_kernels
 } // namespace kernels
 } // namespace tensorrt_llm
+
