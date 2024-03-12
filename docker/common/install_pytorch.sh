@@ -1,11 +1,16 @@
 #!/bin/bash
 
+# This script installs PyTorch with a specific version and CXX11 ABI setting.
+
 set -ex
 
+# Variables
 TORCH_VERSION="2.1.0"
 SYSTEM_ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 
+# Functions
 prepare_environment() {
+    # Prepare the environment based on the system type.
     if [[ $SYSTEM_ID == *"ubuntu"* ]]; then
       apt-get update && apt-get -y install ninja-build
       apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -23,6 +28,7 @@ prepare_environment() {
 }
 
 restore_environment() {
+    # Restore the environment based on the system type.
     if [[ $SYSTEM_ID == *"centos"* ]] && [[ "$1" -eq "1" ]]; then
         # Re-enable devtoolset
         rm -f /tmp/devtoolset_env
@@ -31,11 +37,15 @@ restore_environment() {
 }
 
 install_from_source() {
+    # Install PyTorch from source with a specific CXX11 ABI setting.
     prepare_environment $1
     export _GLIBCXX_USE_CXX11_ABI=$1
     export TORCH_CUDA_ARCH_LIST="8.0;9.0"
 
+    # Uninstall any existing PyTorch installation.
     pip uninstall -y torch
+
+    # Clone, build, and install PyTorch from source.
     cd /tmp
     git clone --depth 1 --branch v$TORCH_VERSION https://github.com/pytorch/pytorch
     cd pytorch
@@ -47,23 +57,12 @@ install_from_source() {
 }
 
 install_from_pypi() {
+    # Install PyTorch from PyPI.
     pip install torch==${TORCH_VERSION}
 }
 
+# Main
 case "$1" in
   "skip")
     ;;
-  "pypi")
-    install_from_pypi
-    ;;
-  "src_cxx11_abi")
-    install_from_source 1
-    ;;
-  "src_non_cxx11_abi")
-    install_from_source 0
-    ;;
-  *)
-    echo "Incorrect input argument..."
-    exit 1
-    ;;
-esac
+  "pyp
