@@ -29,25 +29,42 @@ namespace tensorrt_llm::runtime
 class GenerationOutput
 {
 public:
+    // The tensor that holds the generated token IDs.
     using TensorPtr = ITensor::SharedPtr;
 
+    // A callback function that is called when a new token is generated.
     using Callback = std::function<void(TensorPtr const& ids, SizeType step, bool finished)>;
 
+    /**
+     * Constructs a GenerationOutput object with the given IDs tensor.
+     *
+     * @param ids The tensor that holds the generated token IDs.
+     */
     explicit GenerationOutput(TensorPtr ids)
         : ids{std::move(ids)}
     {
         TLLM_CHECK_WITH_INFO(static_cast<bool>(this->ids), "Invalid ids tensor");
     }
 
-    // mandatory parameters
+    // The tensor that holds the generated token IDs.
     TensorPtr ids; // [batchSize, beamWidth, maxInputLength + maxNewTokens]
 
-    // optional parameters
-    TensorPtr logProbs;      // [request_output_length, batch_size * beam_width], must be float*, on gpu
+    // Optional parameters
+
+    /**
+     * The tensor that holds the log probabilities of the generated tokens.
+     * This tensor must be a float tensor and must be on the GPU.
+     */
+    TensorPtr logProbs; // [request_output_length, batch_size * beam_width], must be float*, on gpu
+
+    /**
+     * The tensor that holds the context logits for the input sequence.
+     * This tensor has shape [batch_size, max_input_length, vocab_size_padded].
+     */
     TensorPtr contextLogits; // [batch_size, max_input_length, vocab_size_padded]
 
-    // callbacks
-    Callback onTokenGenerated;
-};
+    // Callbacks
 
-} // namespace tensorrt_llm::runtime
+    /**
+     * A callback function that is called when a new token is generated.
+
