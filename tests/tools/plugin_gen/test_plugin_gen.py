@@ -13,11 +13,13 @@ from tensorrt_llm.tools.plugin_gen.plugin_gen import TRITON_COMPILE_BIN, gen_trt
 WORKSPACE = './tmp/'
 
 # Function to check if Triton is installed
-def is_triton_installed() -> bool:
+def is_triton_installed():
     return os.path.exists(TRITON_COMPILE_BIN)
 
 # Skip the test if Triton is not installed
-@pytest.mark.skipif(not is_triton_installed(), reason='triton is not installed')
+@pytest.mark.skipif(not is_triton_installed(), reason='Triton is not installed')
 def test_end_to_end():
     # Generate TRT plugins
     gen_trt_plugins(workspace=WORKSPACE, metas=[KERNEL_META_DATA])
+
+    # Add additional test cases or checks here to verify the correctness of the generated plugins
