@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,4 +27,24 @@ from tensorrt_llm import Module, Tensor
 class TorchMLP(nn.Module):
 
     def __init__(self, hidden_size, ffn_hidden_size, bias=True):
-        super().__init__
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.ffn_hidden_size = ffn_hidden_size
+        self.fc1 = nn.Linear(hidden_size, ffn_hidden_size, bias=bias)
+        self.fc2 = nn.Linear(ffn_hidden_size, hidden_size, bias=bias)
+
+    def forward(self, x):
+        x = x.float()
+        x = self.fc1(x)
+        x = torch.relu(x)
+        x = self.fc2(x)
+        return x
+
+
+class TensorRTMLP(Module):
+
+    def __init__(self, hidden_size, ffn_hidden_size, bias=True):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.ffn_hidden_size = ffn_hidden_size
+        self.fc1 = Tensor(
