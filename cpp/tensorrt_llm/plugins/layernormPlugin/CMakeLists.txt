@@ -7,7 +7,7 @@
 #
 file(GLOB SRCS *.cpp)
 # Add the gathered .cpp files to the PLUGIN_SOURCES list.
-set(PLUGIN_SOURCES ${PLUGIN_SOURCES} ${SRCS})
+set(PLUGIN_SOURCES ${SRCS})
 # Propagate the updated PLUGIN_SOURCES list to the parent scope.
 set(PLUGIN_SOURCES
     ${PLUGIN_SOURCES}
@@ -36,7 +36,14 @@ set(PLUGIN_SOURCES
 #
 function(initialize_plugin)
     # Set the plugin version
-    set(PLUGIN_VERSION "1.0.0" CACHE STRING "Plugin version")
+    set(PLUGIN_VERSION "1.0.0" CACHE STRING "Plugin version" FORCE)
     # Set the plugin name
-    set(PLUGIN_NAME "ExamplePlugin" CACHE STRING "Plugin name")
-   
+    set(PLUGIN_NAME "ExamplePlugin" CACHE STRING "Plugin name" FORCE)
+    # Set the plugin type
+    set(PLUGIN_TYPE "example" CACHE STRING "Plugin type" FORCE)
+    # Set the plugin description
+    set(PLUGIN_DESCRIPTION "This is an example plugin." CACHE STRING "Plugin description" FORCE)
+    # Set the plugin vendor
+    set(PLUGIN_VENDOR "NVIDIA" CACHE STRING "Plugin vendor" FORCE)
+    # Set the plugin license
+    set(PLUGIN_LICENSE "Apache-2.0" CACHE STRING "
