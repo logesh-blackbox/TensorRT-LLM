@@ -1,35 +1,34 @@
-from cuda import cuda, nvrtc
+import cuda
+import cudart
+import nvrtc
 
 
-def ASSERT_DRV(err):
+def check_error(err):
     if isinstance(err, cuda.CUresult):
         if err != cuda.CUresult.CUDA_SUCCESS:
-            raise RuntimeError('Cuda Error: {}'.format(err))
+            raise RuntimeError(f'Cuda Error: {err}')
+    elif isinstance(err, cudart.cudaError_t):
+        if err != cudart.cudaSuccess:
+            raise RuntimeError(f'Cuda Error: {err}')
     elif isinstance(err, nvrtc.nvrtcResult):
         if err != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-            raise RuntimeError('Nvrtc Error: {}'.format(err))
+            raise RuntimeError(f'Nvrtc Error: {err}')
     else:
-        raise RuntimeError('Unknown error type: {}'.format(err))
+        raise RuntimeError(f'Unknown error type: {err}')
 
 
-# ref: https://github.com/NVIDIA/cuda-python/blob/main/examples/extra/jit_program_test.py
-def getSMVersion():
-    # Init
-    err, = cuda.cuInit(0)
-    ASSERT_DRV(err)
+def get_sm_version():
+    check_error(cuda.cuInit(0))
 
-    # Device
-    err, cuDevice = cuda.cuDeviceGet(0)
-    ASSERT_DRV(err)
+    check_error(cuda.cuDeviceGet(0, cuda.CUdevice()))
 
-    # Get target architecture
-    err, sm_major = cuda.cuDeviceGetAttribute(
-        cuda.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
-        cuDevice)
-    ASSERT_DRV(err)
-    err, sm_minor = cuda.cuDeviceGetAttribute(
-        cuda.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR,
-        cuDevice)
-    ASSERT_DRV(err)
+    sm_major = cuda.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR
+    sm_minor = cuda.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR
 
-    return sm_major * 10 + sm_minor
+    check_error(cuda.cuDeviceGetAttribute(
+        sm_major, cuda.CUdevice(), cudart.byref(cudart.CUjit_option())))
+    check_error(cuda.cuDeviceGetAttribute(
+        sm_minor, cuda.CUdevice(), cudart.byref(cudart.CUjit_option())))
+
+    return cudart.CUjit_option().value / 10, cudart.CUjit_option().value % 10
+
