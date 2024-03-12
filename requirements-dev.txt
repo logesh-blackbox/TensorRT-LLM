@@ -1,19 +1,19 @@
-torch
-transformers==4.31.0
-diffusers==0.15.0
-accelerate==0.20.3
-colored
-polygraphy
-onnx==1.12.0
-mpi4py
-# tensorrt>=8.6.0
-numpy
-cuda-python==12.2.0
-mypy
-pytest-cov
-pytest-xdist
-pytest-forked
-pre-commit
-einops
-parameterized
-graphviz
+# torch: A popular deep learning library for Python, providing tensor computation with strong GPU acceleration.
+# torchvision: A library that extends PyTorch with computer vision modules, including data loaders, transforms, and models.
+# transformers==4.31.0: A library for state-of-the-art Natural Language Processing, built on top of PyTorch.
+# diffusers==0.15.0: A library for creating and using diffusion models, which are a class of generative models.
+# accelerate==0.20.3: A library for distributed training and inference, built on top of PyTorch and Hugging Face Transformers.
+# colored: A library for adding colored terminal text in Python.
+# polygraphy: A library for optimizing and debugging NVIDIA TensorRT engines.
+# onnx==1.12.0: A library for representing machine learning models in a format that is portable and extensible.
+# mpi4py: A library for Message Passing Interface (MPI) standard for parallel computing in Python.
+# numpy: A library for working with arrays and mathematical functions in Python.
+# cuda-python==12.2.0: The CUDA Python library, providing an interface for GPU-accelerated computation in Python.
+# mypy: A static type checker for Python, helping to catch type-related errors during development.
+# pytest-cov: A plugin for pytest to measure code coverage during testing.
+# pytest-xdist: A plugin for pytest to enable distributed and parallel testing.
+# pytest-forked: A plugin for pytest to run tests in forked subprocesses.
+# pre-commit: A framework for managing and maintaining multi-language pre-commit hooks.
+# einops: A library for efficient array operations, inspired by Numpy and Einsum.
+# parameterized: A pytest plugin for parameterized testing, allowing tests to be run with different sets of input data.
+# graphviz: A library for creating and manipulating graph structures, with support for rendering graphs as images.
