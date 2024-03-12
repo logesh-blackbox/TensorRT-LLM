@@ -29,12 +29,12 @@ using namespace tensorrt_llm::runtime;
 
 namespace tc = tensorrt_llm::common;
 
-ITensor::UniquePtr ITensor::slice(SharedPtr tensor, std::size_t offset, std::size_t size)
+ITensor::UniquePtr ITensor::slice(std::shared_ptr<ITensor> tensor, std::size_t offset, std::size_t size)
 {
     return std::make_unique<TensorView>(std::move(tensor), offset, size);
 }
 
-ITensor::UniquePtr ITensor::view(IBuffer::SharedPtr buffer, nvinfer1::Dims const& dims)
+ITensor::UniquePtr ITensor::view(std::shared_ptr<IBuffer> buffer, nvinfer1::Dims const& dims)
 {
     auto const size = buffer->getSize();
     return std::make_unique<TensorView>(std::move(buffer), 0, size, dims);
@@ -47,7 +47,7 @@ nvinfer1::Dims ITensor::makeShape(std::initializer_list<SizeType> const& dims)
     shape.nbDims = dims.size();
     for (std::size_t i = 0; i < dims.size(); ++i)
     {
-        shape.d[i] = std::data(dims)[i];
+        shape.d[i] = *std::data(dims)[i];
     }
     return shape;
 }
@@ -130,7 +130,4 @@ void printTensor(ITensor const& tensor, std::ostream& out)
     {
         out << "Not printing elements for more than 3 dims\n";
     }
-    else if (shape.nbDims == 3 && shape.d[2] > 1)
-    {
-        for (int i = 0; i < shape.d[0]; ++i)
-        {
+    else if (shape.nbDims == 3 && shape.d[2
