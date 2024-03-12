@@ -1,2 +1,5 @@
+# Pattern to match any file or directory name starting with 'bert'
 bert*
+
+# Pattern to match any file name ending with '.log'
 *.log
