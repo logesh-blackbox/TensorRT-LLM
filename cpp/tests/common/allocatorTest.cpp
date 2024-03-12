@@ -32,11 +32,9 @@ TEST(Allocator, DeviceDestruction)
         auto allocator = std::make_unique<tc::CudaAllocator>(tr::BufferManager(streamPtr));
 
         auto constexpr sizeBytes = 1024 * 1024;
-        void* ptr{};
-        // device alloc
-        ptr = allocator->reMalloc(ptr, sizeBytes, false);
+        auto ptr = allocator->reMalloc(nullptr, sizeBytes, false);
         EXPECT_NE(ptr, nullptr);
-        allocator->free(&ptr);
+        allocator->free(ptr);
         EXPECT_EQ(ptr, nullptr);
         ptr = allocator->reMalloc(ptr, sizeBytes, true);
         EXPECT_NE(ptr, nullptr);
@@ -49,3 +47,4 @@ TEST(Allocator, DeviceDestruction)
     }
     streamPtr->synchronize();
 }
+
