@@ -18,7 +18,7 @@
 # the License.
 #
 file(GLOB SRCS *.cpp)
-set(PLUGIN_SOURCES ${PLUGIN_SOURCES} ${SRCS})
+set(PLUGIN_SOURCES ${SRCS})
 # The 'set' command with 'PARENT_SCOPE' sets the PLUGIN_SOURCES variable in the
 # parent scope (i.e., the calling script or function).
 set(PLUGIN_SOURCES
@@ -39,3 +39,4 @@ set(PLUGIN_SOURCES
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License
+
