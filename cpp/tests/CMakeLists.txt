@@ -1,60 +1,28 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION &
-# AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not
-# use this file except in compliance with the License. You may obtain a copy of
-# the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations under
-# the License. GoogleTest Preparation - Code block copied from
-# https://google.github.io/googletest/quickstart-cmake.html
+cmake_minimum_required(VERSION 3.14)
+project(tensorrt_llm)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG release-1.12.1)
 FetchContent_MakeAvailable(googletest)
-include(GoogleTest)
-
-find_library_create_target(nvonnxparser nvonnxparser SHARED ${TRT_OUT_DIR}
-                           ${TRT_LIB_DIR})
-
-include_directories(
-  ${PROJECT_SOURCE_DIR}/tensorrt_llm/cutlass_extensions/include
-  ${PROJECT_SOURCE_DIR}/include)
-
-set(TOP_LEVEL_DIR "${PROJECT_SOURCE_DIR}/..")
 
 add_custom_target(google-tests)
 
 function(add_gtest test_name test_src)
   add_executable(${test_name} ${test_src})
 
-  if(NOT WIN32) # Linux
-    target_link_libraries(
-      ${test_name} PUBLIC ${SHARED_TARGET} gtest_main gmock_main nvonnxparser
-                          nvinfer_plugin_tensorrt_llm)
+  if(NOT WIN32)
+    target_link_libraries(${test_name} PUBLIC gtest_main gmock_main nvonnxparser nvinfer_plugin_tensorrt_llm)
   else()
-    # Use STATIC_TARGET on Windows because MSVC is picky about duplicate symbols
-    # if the shared and static libs both get linked
-    target_link_libraries(
-      ${test_name} PUBLIC ${STATIC_TARGET} gtest_main gmock_main nvonnxparser
-                          nvinfer_plugin_tensorrt_llm)
+    target_link_libraries(${test_name} PUBLIC gtest_main gmock_main nvonnxparser nvinfer_plugin_tensorrt_llm STATIC_TARGET)
   endif()
 
   target_compile_features(${test_name} PRIVATE cxx_std_17)
   target_compile_definitions(${test_name}
-                             PUBLIC TOP_LEVEL_DIR="${TOP_LEVEL_DIR}")
-  gtest_discover_tests(
-    ${test_name} PROPERTIES ENVIRONMENT "CUDA_MODULE_LOADING=LAZY"
-                            DISCOVERY_TIMEOUT 30) # Longer timeout needed
-                                                  # because discovery can be
-                                                  # slow on Windows
+                             PUBLIC TOP_LEVEL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/..")
+  gtest_discover_tests(${test_name} PROPERTIES ENVIRONMENT "CUDA_MODULE_LOADING=LAZY" DISCOVERY_TIMEOUT 30)
   add_dependencies(google-tests ${test_name})
 endfunction()
 
