@@ -1,23 +1,15 @@
-
-from torch.utils.data import IterableDataset,Dataset
+from torch.utils.data import IterableDataset, Dataset
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 import torch
-import json,gzip
-from typing import Dict,Iterable
+import json, gzip
+from typing import Dict, Iterable
 import os
 
 
 class ConstantLengthDataset(IterableDataset):
     """
     Iterable dataset that returns constant length chunks of tokens from stream of text files.
-        Args:
-            tokenizer (Tokenizer): The processor used for proccessing the data.
-            dataset (dataset.Dataset): Dataset with text files.
-            infinite (bool): If True the iterator is reset after dataset reaches end else stops.
-            seq_length (int): Length of token sequences to return.
-            num_of_sequences (int): Number of token sequences to keep in buffer.
-            chars_per_token (int): Number of characters per token used to estimate number of tokens in text buffer.
     """
 
     def __init__(
@@ -30,14 +22,14 @@ class ConstantLengthDataset(IterableDataset):
         chars_per_token=3.6,
     ):
         self.tokenizer = tokenizer
-        self.concat_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else args.eos_token_id
+        self.concat_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 50256
         self.dataset = dataset.shuffle(seed=42)["train"]
         self.seq_length = seq_length
         self.infinite = infinite
         self.current_size = 0
         self.max_buffer_size = seq_length * chars_per_token * num_of_sequences
-    
-    def fetch_content(self,item):
+
+    def fetch_content(self, item):
         return item["content"]
 
     def __iter__(self):
@@ -73,11 +65,11 @@ class ConstantLengthDataset(IterableDataset):
 
 class HumanEvalDataset:
 
-    def __init__(self,humaneval_file:str):
+    def __init__(self, humaneval_file: str):
         self.he_file = humaneval_file
         self.problems = self.read_problems()
 
-    def stream_jsonl(self,filename: str) -> Iterable[Dict]:
+    def stream_jsonl(self, filename: str) -> Iterable[Dict]:
         """
         Parses each jsonl line and yields it as a dictionary
         """
@@ -92,11 +84,11 @@ class HumanEvalDataset:
                 for line in fp:
                     if any(not x.isspace() for x in line):
                         yield json.loads(line)
-    
+
     def read_problems(self) -> Dict[str, Dict]:
         return {task["task_id"]: task for task in self.stream_jsonl(self.he_file)}
-    
-    def write_jsonl(self,filename: str, data: Iterable[Dict], append: bool = False):
+
+    def write_jsonl(self, filename: str, data: Iterable[Dict], append: bool = False):
         """
         Writes an iterable of dictionaries to jsonl
         """
@@ -135,17 +127,13 @@ def _fetch_constantlength_inputs(
     for _ in range(batch_size):
         _item = next(iter_cds)
         input_sentences.append(_item["text"][0])
-        total_batch_tokens+=_item['input_ids'].shape[-1]
+        total_batch_tokens += _item['input_ids'].shape[-1]
     print(len(input_sentences), batch_size, input_sentences[0])
     print(f"Per batch input token length: {total_batch_tokens}")
     return input_sentences
 
-def fetch_inputs(batch_size,tokenizer=None,scale_input_factor=1,per_seq_input_token_length=1000):
-  
-    print(f"Generating constant length dataset with per_seq_length: {per_seq_input_token_length}")
-    input_sentences = _fetch_constantlength_inputs(
-        batch_size, tokenizer, per_seq_input_token_length
-    )
-    inputs = input_sentences[:batch_size]
-    warmup_sentences = input_sentences[:1]
-    return inputs,warmup_sentences
+def fetch_inputs(batch_size, tokenizer=None, scale_input_factor=1, per_seq_input_token_length=1000):
+    """
+    Generates constant length dataset with given parameters.
+    """
+    print(f"Generating constant length dataset with
