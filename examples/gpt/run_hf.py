@@ -12,10 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import argparse
 import csv
-from pathlib import Path
-
 import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, T5Tokenizer
@@ -129,34 +128,4 @@ def generate(
                                 max_length=max_input_length + max_output_len,
                                 top_k=top_k,
                                 temperature=temperature,
-                                eos_token_id=END_ID,
-                                pad_token_id=END_ID)
-    torch.cuda.synchronize()
-
-    if output_csv is None and output_npy is None:
-        for b in range(input_lengths.size(0)):
-            inputs = input_tokens[b]
-            input_text = tokenizer.decode(inputs)
-            print(f'Input: {input_text}')
-            outputs = output_ids[b][max_input_length:].tolist()
-            output_text = tokenizer.decode(outputs)
-            print(f'Output: {output_text}')
-
-    if output_csv is not None:
-        output_file = Path(output_csv)
-        output_file.parent.mkdir(exist_ok=True, parents=True)
-        outputs = output_ids[:, max_input_length:].tolist()
-        with open(output_file, 'w') as csv_file:
-            writer = csv.writer(csv_file, delimiter=',')
-            writer.writerows(outputs)
-
-    if output_npy is not None:
-        output_file = Path(output_npy)
-        output_file.parent.mkdir(exist_ok=True, parents=True)
-        outputs = output_ids[:, max_input_length:].tolist()
-        np.save(output_file, np.array(outputs, dtype='int32'))
-
-
-if __name__ == '__main__':
-    args = parse_arguments()
-    generate(**vars(args))
+                                eos_
