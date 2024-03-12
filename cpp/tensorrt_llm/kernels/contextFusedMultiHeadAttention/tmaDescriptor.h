@@ -16,54 +16,56 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace tensorrt_llm
 {
 namespace kernels
 {
 
 // TMA desc type.
-typedef enum
+enum class cudaTmaDescType
 {
     TILED = 0,    // Tiled mode
     IM2COL      // Im2col mode
-} cudaTmaDescType;
+};
 
 // TMA swizzle type.
-typedef enum
+enum class cudaTmaDescSwizzle
 {
     SWIZZLE_DISABLED,
     SWIZZLE_32B,
     SWIZZLE_64B,
     SWIZZLE_128B,
     SWIZZLE_MAX
-} cudaTmaDescSwizzle;
+};
 
-typedef enum
+enum class cudaTmaDescBarrier
 {
     BARRIER64,
     BARRIER128
-} cudaTmaDescBarrier;
+};
 
 // TMA interleave type.
-typedef enum
+enum class cudaTmaDescInterleave
 {
     INTERLEAVE_DISABLED,
     INTERLEAVE_16B,
     INTERLEAVE_32B,
     INTERLEAVE_MAX
-} cudaTmaDescInterleave;
+};
 
 // TMA L2 sector promotion.
-typedef enum
+enum class cudaTmaDescPromotion
 {
     PROMOTION_DISABLED = 0,
     PROMOTION_64B,
     PROMOTION_128B,
     PROMOTION_256B
-} cudaTmaDescPromotion;
+};
 
 // TMA data type.
-typedef enum
+enum class cudaTmaDescFormat
 {
     U8 = 0,
     U16,
@@ -77,22 +79,22 @@ typedef enum
     F64_RN,
     BF16_RN,
     FORMAT_MAX
-} cudaTmaDescFormat;
+};
 
 // TMA cache control.
-typedef enum
+enum class cudaTmaDescCacheCtrl
 {
     PREFETCH,      // Prefetch tma descriptor using global memory address
     INVALIDATE,    // Invalidate tma descriptor in l2 cache
     INVALIDATE_ALL // Invalidate tma descriptor and all elements in l2 cache line
-} cudaTmaDescCacheCtrl;
+};
 
 // TMA OOB fill modes.
-typedef enum
+enum class cudaTmaDescOobFillMode
 {
     TENSOR_ZFILL,
     TENSOR_CFILL
-} cudaTmaDescOobFillMode;
+};
 
 // Constants for tensor size and stride.
 constexpr uint64_t k_max_tensor_size = (1llu << 36);
@@ -108,7 +110,7 @@ constexpr uint64_t k_min_traversal_stride = 1llu;
 constexpr uint32_t k_max_cta_id = (1 << 6) - 1;
 
 // The 512 bit of descriptor for tiled mode.
-typedef struct
+struct cudaTmaDescTiled
 {
     uint64_t tensor_common0;
     uint32_t tensor_common1;
@@ -119,10 +121,10 @@ typedef struct
     uint32_t traversal_stride_box_0; //< packed 3b (-1)
 
     uint32_t box_size_end;
-} cudaTmaDescTiled;
+};
 
 // The 512 bit of descritptro for im2col mode.
-typedef struct
+struct cudaTmaDescIm2Col
 {
     uint64_t tensor_common0;
     uint32_t tensor_common1;
@@ -134,32 +136,35 @@ typedef struct
 
     uint32_t box_corner_dhw;
     uint32_t range_ndhw;
-} cudaTmaDescIm2Col;
+};
 
 // TMA desc size
 constexpr uint32_t TMA_DESC_SIZE_IN_BYTE = 64;
 
 // TMA desc
-typedef struct alignas(64)
+union cudaTmaDesc
 {
     uint64_t data[8];
-} cudaTmaDesc;
+    cudaTmaDescTiled tiled;
+    cudaTmaDescIm2Col im2col;
+};
 
-////////////
-
-// manage TMA descriptor host code.
-// allocate, deallocate and manipulate tma desc in the host
-// copy the tma descriptor from host code to device code
-// Multiple TMA desc, one desc per batch.
-// Device desc ptr should be allocated outside the class and reused
-template <
-    // number of dimensions.
-    int NUM_DIMS>
+template <int NUM_DIMS>
 class Multiple_tma_descriptor
 {
 public:
     // ctor
-    Multiple_tma_descriptor(int batch_size_)
-        : batch_size(batch_size_)
+    Multiple_tma_descriptor(int batch_size)
+        : batch_size(batch_size), desc_count(batch_size), descs(nullptr)
     {
-        if (
+        descs = new cudaTmaDesc[batch_size];
+    }
+
+    ~Multiple_tma_descriptor()
+    {
+        delete[] descs;
+    }
+
+    cudaTmaDesc& get_desc(int i)
+    {
+        return descs
