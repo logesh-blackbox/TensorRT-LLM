@@ -20,6 +20,7 @@
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/runtime/common.h"
 #include <list>
+#include <map>
 
 namespace tensorrt_llm::batch_manager::batch_scheduler
 {
@@ -77,4 +78,3 @@ private:
 };
 
 } // namespace tensorrt_llm::batch_manager::batch_scheduler
-
