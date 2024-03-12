@@ -25,8 +25,18 @@
 namespace tensorrt_llm::common
 {
 
-namespace
-{
+/**
+ * @brief Formats a string using a given format and variable arguments.
+ *
+ * This function takes a format string and a variable number of arguments,
+ * and returns a formatted string. It uses the standard C++ vsnprintf function
+ * to format the string.
+ *
+ * @param format The format string to use for formatting.
+ * @param args The variable arguments to use for formatting.
+ *
+ * @return A formatted string.
+ */
 std::string vformat(char const* fmt, va_list args)
 {
     va_list args0;
@@ -43,15 +53,13 @@ std::string vformat(char const* fmt, va_list args)
     return stringBuf;
 }
 
-} // namespace
-
-std::string fmtstr(char const* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    std::string result = vformat(format, args);
-    va_end(args);
-    return result;
-};
-
-} // namespace tensorrt_llm::common
+/**
+ * @brief Formats a string using a given format and variable arguments.
+ *
+ * This function takes a format string and a variable number of arguments,
+ * and returns a formatted string. It uses the vformat function to format the string.
+ *
+ * @param format The format string to use for formatting.
+ * @param ... The variable arguments to use for formatting.
+ *
+ * @
