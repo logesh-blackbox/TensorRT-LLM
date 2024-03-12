@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import math
 
 import torch
@@ -19,20 +20,52 @@ from einops import rearrange
 
 
 def geglu(x):
+    """
+    Applies Gaussian Error Linear Units (GELU) activation function element-wise.
+
+    Args:
+        x (torch.Tensor): Input tensor of any shape.
+
+    Returns:
+        torch.Tensor: Output tensor with the same shape as the input tensor.
+    """
     a, b = x.chunk(2, dim=-1)
     return a * torch.nn.functional.gelu(b)
 
 
 def swiglu(x):
+    """
+    Applies Sigmoid Weighted Linear Units (SiLU) activation function element-wise.
+
+    Args:
+        x (torch.Tensor): Input tensor of any shape.
+
+    Returns:
+        torch.Tensor: Output tensor with the same shape as the input tensor.
+    """
     x, gate = x.chunk(2, dim=-1)
     return torch.nn.functional.silu(gate) * x
 
 
 def generate_qkv(x, Wqkv, nheads, kvpacked=False, qkvpacked=False):
     """
-    Arguments:
-        x: (batch_size, seqlen, nheads * d)
-        Wqkv: nn.Linear(nheads * d, 3 * nheads * d)
+    Generates query, key, and value vectors for multi-head attention.
+
+    Args:
+        x (torch.Tensor): Input tensor of shape (batch_size, seqlen, nheads * d).
+        Wqkv (nn.Linear): Linear layer to generate query, key, and value vectors.
+        nheads (int): Number of attention heads.
+        kvpacked (bool): Whether to pack key and value vectors together. Default is False.
+        qkvpacked (bool): Whether to pack query, key, and value vectors together. Default is False.
+
+    Returns:
+        tuple: A tuple containing the following tensors:
+            - qkv_unpad (torch.Tensor): Unpadded query, key, and value vectors.
+            - cu_seqlens_q (torch.Tensor): CUDA sequence lengths for query vectors.
+            - max_seqlen_q (int): Maximum sequence length for query vectors.
+            - qkv (torch.Tensor): Padded query, key, and value vectors.
+            - output_pad_fn (callable): Function to pad output tensor.
+            - dqkv_pad_fn (callable): Function to pad differentiated query, key, and value vectors.
     """
     assert not (kvpacked and qkvpacked)
     batch_size, seqlen, dim = x.shape
@@ -74,80 +107,4 @@ def generate_qkv(x, Wqkv, nheads, kvpacked=False, qkvpacked=False):
         dkv_pad_fn = lambda dkv_unpad: rearrange(
             dkv_unpad, '(b s) t h d -> b s t h d', b=batch_size)
         return (q_unpad, kv_unpad, cu_seqlens_q, cu_seqlens_k, max_seqlen_q,
-                max_seqlen_k, q, kv, output_pad_fn, dq_pad_fn, dkv_pad_fn)
-    else:
-        q, k, v = [
-            rearrange(z, 'b s (h d) -> b s h d', h=nheads) for z in [q, k, v]
-        ]
-        dq_pad_fn = output_pad_fn
-        dk_pad_fn = lambda dk_unpad: rearrange(
-            dk_unpad, '(b s) h d -> b s h d', b=batch_size)
-        return (q_unpad, k_unpad, v_unpad, cu_seqlens_q, cu_seqlens_k,
-                max_seqlen_q, max_seqlen_k, q, k, v, output_pad_fn, dq_pad_fn,
-                dk_pad_fn)
-
-
-def attention_ref(q,
-                  k,
-                  v,
-                  causal=False,
-                  bias=None,
-                  upcast=True,
-                  reorder_ops=False):
-    """
-    Arguments:
-        q: (batch_size, seqlen_q, nheads, head_dim)
-        k: (batch_size, seqlen_k, nheads, head_dim)
-        v: (batch_size, seqlen_k, nheads, head_dim)
-        bias: (batch_size, nheads, seqlen_q, seqlen_k)
-        upcast: whether to cast all inputs to fp32, do all computation in fp32, then cast
-            output back to fp16/bf16.
-        reorder_ops: whether to change the order of operations (scaling k instead of scaling k, etc.)
-            without changing the math. This is to estimate the numerical error from operation
-            reordering.
-    Output:
-        output: (batch_size, seqlen_q, nheads, head_dim)
-        attention: (batch_size, nheads, seqlen_q, seqlen_k), softmax after dropout
-    """
-    dtype_og = q.dtype
-    if upcast:
-        q, k, v = q.float(), k.float(), v.float()
-    seqlen_q, seqlen_k = q.shape[1], k.shape[1]
-    d = q.shape[-1]
-    if not reorder_ops:
-        scores = torch.einsum('bthd,bshd->bhts', q / math.sqrt(d), k)
-    else:
-        scores = torch.einsum('bthd,bshd->bhts', q, k / math.sqrt(d))
-    if bias is not None:
-        scores = (scores + bias).to(dtype=scores.dtype)
-    if causal:
-        causal_mask = torch.triu(
-            torch.ones(seqlen_q, seqlen_k, dtype=torch.bool, device=q.device),
-            1)
-        scores.masked_fill_(causal_mask, float('-inf'))
-    attention = torch.softmax(scores, dim=-1)
-    output = torch.einsum('bhts,bshd->bthd', attention, v)
-    return output.to(dtype=dtype_og), attention.to(dtype=dtype_og)
-
-
-def attention_kvpacked_ref(q, kv, causal=False, upcast=True, reorder_ops=False):
-    return attention_ref(q,
-                         kv[:, :, 0],
-                         kv[:, :, 1],
-                         upcast=upcast,
-                         causal=causal,
-                         reorder_ops=reorder_ops)
-
-
-def attention_qkvpacked_ref(qkv,
-                            causal=False,
-                            bias=None,
-                            upcast=True,
-                            reorder_ops=False):
-    return attention_ref(qkv[:, :, 0],
-                         qkv[:, :, 1],
-                         qkv[:, :, 2],
-                         upcast=upcast,
-                         causal=causal,
-                         bias=bias,
-                         reorder_ops=reorder_ops)
+                max_seqlen_k, q, kv, output_pad_fn, dq_pad_fn
