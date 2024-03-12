@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import unittest
 
 import numpy as np
@@ -61,3 +62,4 @@ class TestFunctional(unittest.TestCase):
         np.testing.assert_allclose(ref.cpu().numpy(),
                                    outputs['output'],
                                    atol=1e-6)
+
