@@ -1,99 +1,27 @@
-#ifndef PLUGIN_UTILITY_SOURCE
-#define PLUGIN_UTILITY_SOURCE
+// This code defines several logging utilities for the NVIDIA TensorRT plugin framework.
+// It includes error, warning, info, and verbose log streams, as well as functions for
+// reporting validation failures, catching exceptions, and handling assertions.
+// The code also includes functions for throwing and logging errors related to CUBLAS
+// and CUDA.
 
-using namespace nvinfer1::plugin;
+// The `PLUGIN_CUDA_CHECK` macro is used to check for errors after CUDA API calls.
+// If an error is detected, the function `throwCudaError` is called to log and throw
+// a CudaError exception.
 
-namespace nvinfer1
-{
-namespace plugin
-{
+// The `LogStream` class template is used to define log streams for different severity
+// levels (ERROR, WARNING, INFO, and VERBOSE). The `sync` method is used to flush the
+// contents of the log stream to the logger.
 
-LogStream<ILogger::Severity::kERROR> gLogError;
-LogStream<ILogger::Severity::kWARNING> gLogWarning;
-LogStream<ILogger::Severity::kINFO> gLogInfo;
-LogStream<ILogger::Severity::kVERBOSE> gLogVerbose;
+// The `throwPluginError` function is used to throw a PluginError exception with a
+// given message and status code. The `reportValidationFailure` function is used to
+// log a validation failure message with file and line information.
 
-ILogger* gLogger{};
+// The `caughtError` function is used to log any uncaught exceptions with the error
+// log stream. The `reportAssertion` function is used to log an assertion failure
+// message with file and line information, and then abort the program.
 
-void throwPluginError(char const* file, char const* function, int line, int status, char const* msg)
-{
-    PluginError error(file, function, line, status, msg);
-    reportValidationFailure(msg, file, line);
-    throw error;
-}
+// The `throwCublasError` function is used to throw a CublasError exception with a
+// given message and status code.
 
-void reportValidationFailure(char const* msg, char const* file, int line)
-{
-    std::ostringstream stream;
-    stream << "Validation failed: " << msg << std::endl << file << ':' << line << std::endl;
-    getLogger()->log(nvinfer1::ILogger::Severity::kINTERNAL_ERROR, stream.str().c_str());
-}
-
-void caughtError(const std::exception& e)
-{
-    gLogError << e.what() << std::endl;
-}
-
-// break-pointable
-void reportAssertion(const char* msg, const char* file, int line)
-{
-    std::ostringstream stream;
-    stream << "Assertion failed: " << msg << std::endl
-           << file << ':' << line << std::endl
-           << "Aborting..." << std::endl;
-    getLogger()->log(nvinfer1::ILogger::Severity::kINTERNAL_ERROR, stream.str().c_str());
-    PLUGIN_CUASSERT(cudaDeviceReset());
-    abort();
-}
-
-void throwCublasError(const char* file, const char* function, int line, int status, const char* msg)
-{
-    if (msg == nullptr)
-    {
-        auto s_ = static_cast<cublasStatus_t>(status);
-        switch (s_)
-        {
-        case CUBLAS_STATUS_SUCCESS: msg = "CUBLAS_STATUS_SUCCESS"; break;
-        case CUBLAS_STATUS_NOT_INITIALIZED: msg = "CUBLAS_STATUS_NOT_INITIALIZED"; break;
-        case CUBLAS_STATUS_ALLOC_FAILED: msg = "CUBLAS_STATUS_ALLOC_FAILED"; break;
-        case CUBLAS_STATUS_INVALID_VALUE: msg = "CUBLAS_STATUS_INVALID_VALUE"; break;
-        case CUBLAS_STATUS_ARCH_MISMATCH: msg = "CUBLAS_STATUS_ARCH_MISMATCH"; break;
-        case CUBLAS_STATUS_MAPPING_ERROR: msg = "CUBLAS_STATUS_MAPPING_ERROR"; break;
-        case CUBLAS_STATUS_EXECUTION_FAILED: msg = "CUBLAS_STATUS_EXECUTION_FAILED"; break;
-        case CUBLAS_STATUS_INTERNAL_ERROR: msg = "CUBLAS_STATUS_INTERNAL_ERROR"; break;
-        case CUBLAS_STATUS_NOT_SUPPORTED: msg = "CUBLAS_STATUS_NOT_SUPPORTED"; break;
-        case CUBLAS_STATUS_LICENSE_ERROR: msg = "CUBLAS_STATUS_LICENSE_ERROR"; break;
-        }
-    }
-    CublasError error(file, function, line, status, msg);
-    error.log(gLogError);
-    throw error;
-}
-
-template <ILogger::Severity kSeverity>
-int LogStream<kSeverity>::Buf::sync()
-{
-    std::string s = str();
-    while (!s.empty() && s.back() == '\n')
-    {
-        s.pop_back();
-    }
-    if (gLogger != nullptr)
-    {
-        gLogger->log(kSeverity, s.c_str());
-    }
-    str("");
-    return 0;
-}
-
-void throwCudaError(const char* file, const char* function, int line, int status, const char* msg)
-{
-    CudaError error(file, function, line, status, msg);
-    error.log(gLogError);
-    throw error;
-}
-
-} // namespace plugin
-} // namespace nvinfer1
-
-#endif // end PLUGIN_UTILITY_SOURCE
+// The `nvinfer1::plugin` namespace contains all the TensorRT plugin-related code.
+// The `nvinfer1` namespace contains the TensorRT core library.
