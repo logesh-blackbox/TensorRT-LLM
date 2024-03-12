@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -22,6 +23,7 @@
 
 int main(int argc, char* argv[])
 {
+    // Initialize TensorRT logger
     class TRTLogger : public nvinfer1::ILogger
     {
     public:
@@ -38,42 +40,22 @@ int main(int argc, char* argv[])
 
     TRTLogger* trtLogger = new TRTLogger();
 
+    // Load the TensorRT LLM plugin library
     std::string libname = "libtensorrt_llm_plugin.so";
 
-    /* =============== initLibNvInferPlugins =============== */
+    // Initialize the TensorRT plugin library
+    bool initLibNvInferPlugins_status = initLibNvInferPlugins(trtLogger, "tensorrt_llm");
+    std::cout << "initLibNvInferPlugins Success Status: " << initLibNvInferPlugins_status << std::endl;
 
-    typedef bool (*initLibNvInferPlugins_sig)(void*, const void*);
-
-    auto initLibNvInferPlugins = getTrtLLMFunction<initLibNvInferPlugins_sig>(
-        /*libFileSoName=*/libname,
-        /*symbol=*/"initLibNvInferPlugins");
-
-    std::cout << std::endl;
-
-    std::string libNamespace = "tensorrt_llm";
-    const char* libNamespace_cstr = libNamespace.data();
-
-    bool status1 = initLibNvInferPlugins(trtLogger, libNamespace_cstr);
-    std::cout << "Success Status: " << status1 << std::endl << std::endl;
-
-    bool status2 = initLibNvInferPlugins(trtLogger, libNamespace_cstr);
-    std::cout << "Success Status: " << status2 << std::endl;
-
-    /* =============== getInferLibVersion =============== */
-
+    // Get the TensorRT library version
     std::cout << std::endl;
     std::cout << "--------------------------------------------------------------------" << std::endl;
-
-    typedef int32_t (*getInferLibVersion_sig)();
-
-    auto getInferLibVersion = getTrtLLMFunction<getInferLibVersion_sig>(
-        /*libFileSoName=*/libname,
-        /*symbol=*/"getInferLibVersion");
-
-    std::cout << std::endl;
-
-    int32_t version = getInferLibVersion();
-    std::cout << "Version: " << version << std::endl;
+    int32_t getInferLibVersion_version = getInferLibVersion();
+    std::cout << "Version: " << getInferLibVersion_version << std::endl;
 
     return 0;
 }
+
+
+
+
