@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
 #include "tensorrt_llm/common/mpiUtils.h"
@@ -34,70 +35,112 @@ namespace tensorrt_llm::plugins
 class AllreducePlugin : public BasePlugin
 {
 public:
+    // Constructor for AllreducePlugin with group, data type, strategy, and counter
     AllreducePlugin(
         std::set<int> group, nvinfer1::DataType type, kernels::AllReduceStrategyType strategy, int32_t counter);
 
+    // Constructor for AllreducePlugin from data and length
     AllreducePlugin(const void* data, size_t length);
 
+    // Destructor for AllreducePlugin
     ~AllreducePlugin() override = default;
 
     // IPluginV2DynamicExt Methods
+    // Clone the plugin
     nvinfer1::IPluginV2DynamicExt* clone() const noexcept override;
+
+    // Get output dimensions for a given output index, input dimensions, number of inputs, and exprBuilder
     nvinfer1::DimsExprs getOutputDimensions(int outputIndex, const nvinfer1::DimsExprs* inputs, int nbInputs,
         nvinfer1::IExprBuilder& exprBuilder) noexcept override;
+
+    // Check if the plugin supports a given format combination
     bool supportsFormatCombination(
         int pos, const nvinfer1::PluginTensorDesc* inOut, int nbInputs, int nbOutputs) noexcept override;
+
+    // Configure the plugin with input and output descriptions
     void configurePlugin(const nvinfer1::DynamicPluginTensorDesc* in, int nbInputs,
         const nvinfer1::DynamicPluginTensorDesc* out, int nbOutputs) noexcept override;
+
+    // Get the workspace size required for the plugin
     size_t getWorkspaceSize(const nvinfer1::PluginTensorDesc* inputs, int nbInputs,
         const nvinfer1::PluginTensorDesc* outputs, int nbOutputs) const noexcept override;
+
+    // Enqueue the plugin for execution with input and output descriptions, inputs, outputs, workspace, and stream
     int enqueue(const nvinfer1::PluginTensorDesc* inputDesc, const nvinfer1::PluginTensorDesc* outputDesc,
         const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream) noexcept override;
 
     // IPluginV2Ext Methods
+    // Get the output data type for a given index and input types
     nvinfer1::DataType getOutputDataType(
         int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept override;
 
     // IPluginV2 Methods
+    // Get the plugin type
     const char* getPluginType() const noexcept override;
+
+    // Get the plugin version
     const char* getPluginVersion() const noexcept override;
+
+    // Get the number of outputs
     int getNbOutputs() const noexcept override;
+
+    // Initialize the plugin
     int initialize() noexcept override;
+
+    // Terminate the plugin
     void terminate() noexcept override;
+
+    // Get the serialization size of the plugin
     size_t getSerializationSize() const noexcept override;
+
+    // Serialize the plugin
     void serialize(void* buffer) const noexcept override;
+
+    // Destroy the plugin
     void destroy() noexcept override;
 
+    // Check if custom all-reduce is supported for a given number of ranks per node
     bool isCustomAllReduceSuported(int ranks_per_node) const noexcept;
 
 private:
+    // Select the implementation based on message size and world size
     kernels::AllReduceStrategyType selectImplementation(size_t messageSize, int worldSize) const noexcept;
+
+    // Layer name
     const std::string mLayerName;
+
+    // Group of MPI ranks
     std::set<int> mGroup;
+
+    // Data type
     nvinfer1::DataType mType;
+
+    // Strategy for all-reduce
     kernels::AllReduceStrategyType mStrategy;
+
+    // Counter
     int32_t mCounter;
 };
 
+// Creator for AllreducePlugin
 class AllreducePluginCreator : public BaseCreator
 {
 public:
+    // Constructor for AllreducePluginCreator
     AllreducePluginCreator();
 
+    // Get the plugin name
     const char* getPluginName() const noexcept override;
 
+    // Get the plugin version
     const char* getPluginVersion() const noexcept override;
 
+    // Get the field names
     const nvinfer1::PluginFieldCollection* getFieldNames() noexcept override;
 
+    // Create the plugin with name, field collection
     nvinfer1::IPluginV2* createPlugin(const char* name, const nvinfer1::PluginFieldCollection* fc) noexcept override;
 
+    // Deserialize the plugin with name, serial data, and serial length
     nvinfer1::IPluginV2* deserializePlugin(
-        const char* name, const void* serialData, size_t serialLength) noexcept override;
-
-private:
-    static nvinfer1::PluginFieldCollection mFC;
-    static std::vector<nvinfer1::PluginField> mPluginAttributes;
-};
-
-} // namespace tensorrt_llm::plugins
+        const char* name, const void* serialData,
