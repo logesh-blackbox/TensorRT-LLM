@@ -139,17 +139,4 @@ TEST_F(BufferManagerTest, Pointers)
     // Test that all pointers are valid
     for (auto i = 0u; i < batchSize; ++i)
     {
-        EXPECT_EQ(pointerBuf[i], tensors[i]->data());
-    }
-}
-
-TEST_F(BufferManagerTest, MemPoolAttributes)
-{
-    BufferManager manager(mStream); // sets attributes of the default memory pool
-    auto const device = mStream->getDevice();
-    ::cudaMemPool_t memPool;
-    TLLM_CUDA_CHECK(cudaDeviceGetDefaultMemPool(&memPool, device));
-    std::uint64_t threshold{0};
-    TLLM_CUDA_CHECK(cudaMemPoolGetAttribute(memPool, cudaMemPoolAttrReleaseThreshold, &threshold));
-    EXPECT_EQ(threshold, std::numeric_limits<std::uint64_t>::max());
-}
+        EXPECT_EQ(
