@@ -1,11 +1,12 @@
-build
-cpp/*build*
-cpp/tests/resources/models
-tensorrt_llm/libs
-**/__pycache__
-examples/**/.git
-examples/**/*.bin
-examples/**/*.engine
-examples/**/*.onnx
-examples/**/c-model
-examples/gpt/gpt*
+# This is a list of files and directories to be excluded during the build process.
+
+# 1. 'build' and 'cpp/build' directories: These are typically used for storing intermediate build files and should be excluded to avoid conflicts or unnecessary compilation.
+# 2. 'cpp/tests/resources/models' directory: This directory contains model files used for testing purposes and should be excluded from the build process.
+# 3. 'tensorrt_llm/libs' directory: This directory contains third-party libraries, and its exclusion helps maintain a clean build environment.
+# 4. '**/__pycache__': This is a special directory created by Python for storing byte-compiled files. It should be excluded to save disk space and improve build performance.
+# 5. 'examples/**/.git': This directory contains Git metadata and should be excluded to avoid unnecessary processing during the build.
+# 6. 'examples/**/*.bin' and 'examples/**/*.engine': These are binary files generated during the build process and should be excluded from further builds.
+# 7. 'examples/**/*.onnx': ONNX is a file format for machine learning models. These files should be excluded if they are not required for the current build.
+# 8. 'examples/**/c-model': This directory contains C-based models, which should be excluded if not needed for the current build.
+# 9. 'examples/gpt/gpt*': This pattern matches any files or directories starting with 'gpt' in the 'examples/gpt' directory. These should be excluded if not required for the current build.
+
