@@ -120,30 +120,4 @@ if __name__ == '__main__':
                                gpt_attention_plugin=use_gpt_attention_plugin,
                                dtype=dtype)
     sampling_config = SamplingConfig(end_id=2,
-                                     pad_id=0,
-                                     temperature=args.temperature,
-                                     top_k=args.top_k,
-                                     top_p=args.top_p)
-
-    with open(serialize_path, 'rb') as f:
-        engine_buffer = f.read()
-    decoder = runtime.GenerationSession(model_config, engine_buffer,
-                                        runtime_mapping)
-    decoder.setup(input_ids.size(0), input_ids.size(1), args.max_output_len)
-
-    output_ids = decoder.decode(input_ids, input_lengths, sampling_config)
-    # [output_len, batch_size, beam_width] -> [batch_size, output_len, beam_width]
-    output_ids = output_ids.squeeze(1)
-    torch.cuda.synchronize()
-    for i in range(len(output_ids.tolist())):
-        output_ids = output_ids.tolist()[i][input_ids.size(1):]
-
-        outputList = tokenizer.batch_decode(output_ids,
-                                            skip_special_tokens=True)
-        output_text = process_response(outputList)
-        print(f'***************************************')
-        print(f'Input --->\n {input_text}')
-        print(f'Output --->\n {"".join(output_text)}')
-        print(f'***************************************')
-
-    print("Finished!")
+                                
