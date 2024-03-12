@@ -21,11 +21,12 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 using namespace tensorrt_llm::runtime;
 namespace tc = tensorrt_llm::common;
 
-class BufferManagerTest : public ::testing::Test // NOLINT(cppcoreguidelines-pro-type-member-init)
+class BufferManagerTest : public ::testing::Test
 {
 protected:
     void SetUp() override
@@ -65,7 +66,7 @@ half convertType(std::size_t val)
 template <typename T>
 void testRoundTrip(BufferManager& manager)
 {
-    auto constexpr size = 128;
+    const std::size_t size = 128;
     std::vector<T> inputCpu(size);
     for (std::size_t i = 0; i < size; ++i)
     {
@@ -73,10 +74,10 @@ void testRoundTrip(BufferManager& manager)
     }
     auto inputGpu = manager.copyFrom(inputCpu, MemoryType::kGPU);
     auto outputCpu = manager.copyFrom(*inputGpu, MemoryType::kPINNED);
-    EXPECT_EQ(inputCpu.size(), outputCpu->getSize());
+    ASSERT_EQ(inputCpu.size(), outputCpu->getSize());
     manager.getStream().synchronize();
     auto outputCpuTyped = bufferCast<T>(*outputCpu);
-    for (size_t i = 0; i < inputCpu.size(); ++i)
+    for (std::size_t i = 0; i < inputCpu.size(); ++i)
     {
         EXPECT_EQ(inputCpu[i], outputCpuTyped[i]);
     }
@@ -84,7 +85,7 @@ void testRoundTrip(BufferManager& manager)
     manager.setZero(*inputGpu);
     manager.copy(*inputGpu, *outputCpu);
     manager.getStream().synchronize();
-    for (size_t i = 0; i < inputCpu.size(); ++i)
+    for (std::size_t i = 0; i < inputCpu.size(); ++i)
     {
         EXPECT_EQ(0, static_cast<int32_t>(outputCpuTyped[i]));
     }
@@ -108,8 +109,7 @@ TEST_F(BufferManagerTest, Pointers)
     // We want to store pointers to the C++ base type in the buffer.
     using cppPointerType = cppBaseType*;
     // This represents the TensorRT type for the pointer.
-    auto constexpr trtPointerType = TRTDataType<cppPointerType>::value;
-    static_assert(std::is_same_v<decltype(trtPointerType), BufferDataType const>);
+    constexpr auto trtPointerType = TRTDataType<cppPointerType>::value;
     static_assert(trtPointerType.isPointer());
     static_assert(trtPointerType.getDataType() == TRTDataType<cppBaseType>::value);
     static_assert(static_cast<nvinfer1::DataType>(trtPointerType) == BufferDataType::kTrtPointerType);
@@ -119,7 +119,7 @@ TEST_F(BufferManagerTest, Pointers)
     static_assert(sizeof(cppStorageType) == sizeof(cppPointerType));
 
     BufferManager manager(mStream);
-    auto constexpr batchSize = 16;
+    const std::size_t batchSize = 16;
     // This buffer is on the CPU for convenient testing. In real code, this would be on the GPU.
     auto pointers = manager.allocate(MemoryType::kCPU, batchSize, trtPointerType);
     // We cast to the correct C++ pointer type checking that the underlying storage type is int64_t.
@@ -127,16 +127,14 @@ TEST_F(BufferManagerTest, Pointers)
 
     // Create the GPU tensors.
     std::vector<ITensor::UniquePtr> tensors(batchSize);
-    auto constexpr beamWidth = 4;
-    auto constexpr maxSeqLen = 10;
-    auto const shape = ITensor::makeShape({beamWidth, maxSeqLen});
-    for (auto i = 0u; i < batchSize; ++i)
+    const std::size_t beamWidth = 4;
+    const std::size_t maxSeqLen = 10;
+    const auto shape = ITensor::makeShape({beamWidth, maxSeqLen});
+    for (std::size_t i = 0; i < batchSize; ++i)
     {
         tensors[i] = manager.allocate(MemoryType::kGPU, shape, TRTDataType<cppBaseType>::value);
         pointerBuf[i] = bufferCast<cppBaseType>(*tensors[i]);
     }
 
     // Test that all pointers are valid
-    for (auto i = 0u; i < batchSize; ++i)
-    {
-        EXPECT_EQ(
+    for (std::size_t i = 0; i
