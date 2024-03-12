@@ -123,6 +123,4 @@ public:
     using WarpGemm = typename Policy::Operator::Shape;
 
     /// Shape describing the number of warps filling the CTA
-    using WarpCount = GemmShape<Shape::kM / WarpGemm::kM, Shape::kN / WarpGemm::kN, Shape::kK / WarpGemm::kK>;
-
-    /// Number of warp-level GEMM
+    using WarpCount = GemmShape<Shape::kM / WarpGemm::kM, Shape::kN / WarpGemm::kN, Shape::kK / WarpGemm::kK
