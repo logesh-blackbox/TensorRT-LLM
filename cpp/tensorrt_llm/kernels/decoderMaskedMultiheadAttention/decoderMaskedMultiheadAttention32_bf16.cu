@@ -30,10 +30,11 @@ namespace mmha
 {
 
 #ifdef ENABLE_BF16
-INSTANTIATE_MMHA_LAUNCHERS(__nv_bfloat16, kSizePerHead)
-#endif
-
-} // namespace mmha
-
-} // namespace kernels
-} // namespace tensorrt_llm
+#define INSTANTIATE_MMHA_LAUNCHERS(T, S)                                                                                 \
+  template void decoderMaskedMultiheadAttentionLaunch<T>(const T* input_query, const T* input_key, const T* input_value,   \
+                                                        const T* input_bias, const int8_t* input_mask, T* output,     \
+                                                        const int64_t* input_query_shape, const int64_t* input_key_shape,\
+                                                        const int64_t* input_value_shape, const int64_t* input_bias_shape,\
+                                                        const int64_t* input_mask_shape, const int64_t* output_shape,   \
+                                                        const int64_t* seq_lengths, const int64_t* heads, const int64_t* k, \
+                                                        const int64_t* v, const int64_t* q, const int64_t
