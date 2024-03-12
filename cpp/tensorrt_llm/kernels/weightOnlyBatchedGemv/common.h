@@ -72,13 +72,34 @@ enum class WeightOnlyType
 };
 
 // Struct representing per-channel weight-only operations
-struct WeightOnlyPerChannel;
-
-// Struct representing group-wise weight-only operations
-template <int GS>  // GS: group size
-struct WeightOnlyGroupWise;
-
-// Enum for activation types
-enum class WeightOnlyActivationType
+struct WeightOnlyPerChannel
 {
-    Gelu
+    // Function to perform per-channel weight-only operation
+    __device__ void operator()(const WeightOnlyParams& params) const
+    {
+        const int m = params.m;
+        const int n = params.n;
+        const int k = params.k;
+        const int group_size = params.group_size;
+        const uint8_t* qweight = params.qweight;
+        const half* scales = params.scales;
+        const half* zeros = params.zeros;
+        const half* in = params.in;
+        const half* bias = params.bias;
+        half* out = params.out;
+
+        const int group_m = m / group_size;
+        const int group_k = k / group_size;
+
+        for (int g = 0; g < group_size; ++g)
+        {
+            for (int i = 0; i < group_m; ++i)
+            {
+                for (int j = 0; j < n; ++j)
+                {
+                    half sum = 0;
+                    for (int l = 0; l < group_k; ++l)
+                    {
+                        const int idx = g * group_k * n + l * n + j;
+                        const int qweight_idx = g * group_k * k + l * k + i * group_size + g;
+                        const int in_idx = i * group
