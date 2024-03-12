@@ -1,25 +1,29 @@
---pre --extra-index-url https://download.pytorch.org/whl/nightly/cu121
-# torch is CPU-only on Windows, so need to specify a torch version with GPU support
-torch==2.1.0.dev20230828+cu121
-torchvision==0.16.0.dev20230828
-torchdata==0.7.0.dev20230828
-torchtext==0.16.0.dev20230828
-tokenizers==0.13.3
-transformers==4.31.0
-diffusers==0.15.0
-accelerate==0.20.3
-colored
-polygraphy
-onnx==1.12.0
-mpi4py
-numpy
-cuda-python==12.2.0
-mypy
-pytest-cov
-pytest-xdist
-pytest-forked
-pre-commit
-einops
-parameterized
-graphviz
-pywin32
+# The following pip install commands are used to set up the Python environment with specific packages and versions.
+# This is done to ensure compatibility and smooth execution of the code.
+
+# Specifying the PyTorch version with GPU support for Windows, as PyTorch is CPU-only on Windows by default.
+!pip install torch==2.1.0.dev20230828+cu121 torchvision==0.16.0.dev20230828 torchdata==0.7.0.dev20230828 torchtext==0.16.0.dev20230828
+
+# Installing additional packages required for the project.
+!pip install tokenizers==0.13.3 transformers==4.31.0 diffusers==0.15.0 accelerate==0.20.3 colored polygraphy onnx==1.12.0 mpi4py numpy cuda-python==12.2.0 mypy pytest-cov pytest-xdist pytest-forked pre-commit einops parameterized graphviz pywin32
+
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.dropout1 = nn.Dropout2d(0.25)
+        self.dropout2 = nn.Dropout2d(0.5)
+        self.fc1 = nn.Linear(9216, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv
