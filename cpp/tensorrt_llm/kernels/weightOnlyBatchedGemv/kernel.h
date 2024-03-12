@@ -54,8 +54,7 @@ struct WeightLayoutDetails
     // Converted fp16 data layout
     //      [elt_7  elt_6  elt_5  elt_4  elt_3  elt_2  elt_1  elt_0] (each elt occupies 16 bits)
     static constexpr int kConvertCount = 8;
-    using Converter
-        = cutlass::FastInterleavedAndBiasedNumericArrayConverter<cutlass::half_t, cutlass::uint4b_t, kConvertCount>;
+    using Converter = cutlass::FastInterleavedAndBiasedNumericArrayConverter<cutlass::half_t, cutlass::uint4b_t, kConvertCount>;
 
     // Each warp completes the internal reduce and writes the [Batch * NPerBlock * Interleave] results to the
     // corresponding address in shared memory
@@ -83,7 +82,7 @@ struct WeightLayoutDetails
     }
 };
 
-// Define a template struct for storing details about the weight layout
+// Define a template struct for storing details about the weight layout for Int8b
 template <>
 struct WeightLayoutDetails<WeightOnlyQuantType::Int8b>
 {
@@ -92,4 +91,4 @@ struct WeightLayoutDetails<WeightOnlyQuantType::Int8b>
     // will alternately process two different row weights
     // for example
     // every 128 consecutive int8 elements [128*i, 128*(i+1)-1] of row N under interleave layout,
-    // the first 64 are from [6
+   
