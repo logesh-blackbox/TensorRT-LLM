@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <float.h>
+#include <cuda_runtime.h>
 
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
@@ -50,12 +51,7 @@ __global__ void setup_topk_runtime_args(int batch_size, uint32_t top_k, uint32_t
         }
         if (k > 0 && p == 0.0f)
         {
-            // for compatibility <= TensorRT-LLM5.0.
-            // This case corresponds to the old topk sampling, which is equivalent to
-            // the old topk_topp sampling with topp=1.0f. TopKSamplingLayer and
-            // TopKTopPSamplingLayer are now merged by TopKSamplingLayer. Thus, we
-            // replace the case topk>0 and topp=0.0f by topk>0 and topp=1.0f for the
-            // compatibility.
+            // for compatibility reasons.
             p = 1.0f;
         }
         // Clip k value. A topk sampling kernel supports up to TOP_K_MAX=64.
@@ -94,135 +90,4 @@ void TopKSamplingLayer<T>::allocateBuffer(size_t const batch_size, std::vector<u
     }
     invokeTopKSampling<T>(nullptr, sampling_workspace_size_, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
         nullptr, max_top_k, 1.0f, vocab_size_padded_, nullptr, stream_, batch_size, skip_decode_buf_);
-    sampling_workspace_ = allocator_->reMalloc(sampling_workspace_, sampling_workspace_size_, false);
-    runtime_top_k_buf_ = allocator_->reMalloc(runtime_top_k_buf_, sizeof(uint32_t) * batch_size, false);
-    runtime_top_p_buf_ = allocator_->reMalloc(runtime_top_p_buf_, sizeof(float) * batch_size, false);
-    is_allocate_buffer_ = true;
-}
-
-template <typename T>
-void TopKSamplingLayer<T>::freeBuffer()
-{
-    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
-    if (is_allocate_buffer_)
-    {
-        allocator_->free((void**) (&sampling_workspace_));
-        allocator_->free((void**) (&runtime_top_k_buf_));
-        allocator_->free((void**) (&runtime_top_p_buf_));
-    }
-    BaseSamplingLayer<T>::freeBuffer();
-    is_allocate_buffer_ = false;
-}
-
-template <typename T>
-void TopKSamplingLayer<T>::setup(size_t const batch_size, SetupParams const& setupParams)
-{
-    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
-    BaseSamplingLayer<T>::setupBase(batch_size, setupParams);
-
-    uint32_t const default_top_k = 0;
-    auto const runtime_top_k = setupParams.runtime_top_k.value_or(std::vector<uint32_t>{default_top_k});
-    auto const runtime_top_p = setupParams.runtime_top_p.value_or(std::vector<float>{});
-
-    allocateBuffer(batch_size, runtime_top_k);
-
-    size_t const runtime_top_k_size = runtime_top_k.size();
-    size_t const runtime_top_p_size = runtime_top_p.size();
-
-    uint32_t const top_k = *std::max_element(std::begin(runtime_top_k), std::end(runtime_top_k));
-    float const top_p = (runtime_top_p_size == 0) ? 0.0f : runtime_top_p.front();
-
-    if (runtime_top_k_size > 1)
-    {
-        TLLM_CHECK_WITH_INFO(runtime_top_k.size() == batch_size,
-            fmtstr(
-                "runtime_top_k.size() (%lu) == batch_size (%lu) is not satisfied!", runtime_top_k.size(), batch_size));
-        cudaAutoCpy(runtime_top_k_buf_, runtime_top_k.data(), batch_size, stream_);
-    }
-    if (runtime_top_p_size > 1)
-    {
-        TLLM_CHECK_WITH_INFO(runtime_top_p.size() == batch_size,
-            fmtstr(
-                "runtime_top_p.size() (%lu) == batch_size (%lu) is not satisfied!", runtime_top_p.size(), batch_size));
-        cudaAutoCpy(runtime_top_p_buf_, runtime_top_p.data(), batch_size, stream_);
-    }
-
-    dim3 block(std::min((int) batch_size, 256));
-    dim3 grid(divUp((int) batch_size, (int) block.x));
-    // support top_k up to 1024.
-    setup_topk_runtime_args<1024><<<grid, block, 0, stream_>>>(batch_size, top_k, runtime_top_k_buf_,
-        runtime_top_k_size, top_p, runtime_top_p_buf_, runtime_top_p_size, skip_decode_buf_);
-    cudaAutoCpy(skip_decode_, skip_decode_buf_, batch_size, stream_);
-    std::vector<uint32_t> runtime_top_ks(batch_size);
-    cudaAutoCpy(runtime_top_ks.data(), runtime_top_k_buf_, batch_size, stream_);
-    runtime_max_top_k_ = *std::max_element(std::begin(runtime_top_ks), std::end(runtime_top_ks));
-}
-
-template <typename T>
-void TopKSamplingLayer<T>::runSampling(DecodingOutputParams& outputs, DecodingParams const& params)
-{
-    TLLM_LOG_DEBUG("%s start", __PRETTY_FUNCTION__);
-
-    auto const batch_size = outputs.output_ids_ptr.shape[0];
-    auto const local_batch_size = params.logits.shape[0];
-    auto const ite = params.ite;
-
-    // in case of skip any, the logit value is already copied and processed.
-    auto* logits = !skip_any_ ? params.logits.template getPtr<T>() : runtime_logits_buf_;
-    auto* end_ids = params.end_ids.template getPtr<const int>();
-
-    bool* finished = (outputs.finished) ? outputs.finished->template getPtr<bool>() : nullptr;
-    invokeAddBiasEndMask(
-        logits, (T*) (nullptr), end_ids, finished, local_batch_size, vocab_size_, vocab_size_padded_, stream_);
-    sync_check_cuda_error();
-
-    float* cum_log_probs = (outputs.cum_log_probs) ? outputs.cum_log_probs->template getPtr<float>() : nullptr;
-    float* output_log_probs = (outputs.output_log_probs) ? outputs.output_log_probs->template getPtr<float>() : nullptr;
-
-    if (cum_log_probs != nullptr || output_log_probs != nullptr)
-    {
-        invokeAddBiasSoftMax(
-            logits, (T*) (nullptr), end_ids, finished, local_batch_size, vocab_size_padded_, vocab_size_, stream_);
-        sync_check_cuda_error();
-    }
-
-    int* sequence_length = (outputs.sequence_length) ? outputs.sequence_length->template getPtr<int>() : nullptr;
-
-    invokeBatchTopKSampling(sampling_workspace_, sampling_workspace_size_, logits,
-        outputs.output_ids_ptr.template getPtr<int*>(), sequence_length, finished, cum_log_probs, output_log_probs,
-        curandstate_buf_ + ite * local_batch_size,
-        (int) runtime_max_top_k_, // useless because runtime_top_k_buf_ is never
-                                  // nullptr. Keep for legacy.
-        (int*) (runtime_top_k_buf_ + ite * local_batch_size),
-        1.0f,                     // useless because runtime_top_p_buf_ is never nullptr. Keep for
-                                  // legacy.
-        runtime_top_p_buf_ + ite * local_batch_size, vocab_size_padded_, end_ids, stream_, local_batch_size,
-        skip_decode_buf_ + ite * local_batch_size);
-    sync_check_cuda_error();
-}
-
-template <typename T>
-TopKSamplingLayer<T>::TopKSamplingLayer(size_t vocab_size, size_t vocab_size_padded, cudaStream_t stream,
-    IAllocator* allocator, bool is_free_buffer_after_forward)
-    : BaseSamplingLayer<T>(vocab_size, vocab_size_padded, stream, allocator, is_free_buffer_after_forward, nullptr)
-{
-}
-
-template <typename T>
-TopKSamplingLayer<T>::TopKSamplingLayer(TopKSamplingLayer<T> const& top_k_sampling_layer)
-    : BaseSamplingLayer<T>(top_k_sampling_layer)
-{
-}
-
-template <typename T>
-TopKSamplingLayer<T>::~TopKSamplingLayer()
-{
-    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
-    freeBuffer();
-}
-
-template class TopKSamplingLayer<float>;
-template class TopKSamplingLayer<half>;
-
-} // namespace layers
-} // namespace tensorrt_llm
+    sampling_workspace
