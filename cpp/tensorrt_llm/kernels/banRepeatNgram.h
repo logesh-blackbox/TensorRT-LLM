@@ -19,15 +19,28 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-namespace tensorrt_llm
-{
-namespace kernels
-{
+namespace tensorrt_llm {
+namespace kernels {
 
+/**
+ * @brief Invokes the BanRepeatNgram function with the given parameters.
+ *
+ * @tparam T The data type of the logits and output_ids_buf.
+ *
+ * @param logits The logits array.
+ * @param output_ids_buf The output IDs buffer.
+ * @param finished_buf The finished buffer.
+ * @param parent_ids_buf The parent IDs buffer.
+ * @param batch_size The batch size.
+ * @param local_batch_size The local batch size.
+ * @param beam_width The beam width.
+ * @param no_repeat_ngram_size_buf The no repeat ngram size buffer.
+ * @param id_offset The ID offset.
+ * @param vocab_size_padded The vocabulary size padded.
+ * @param step The step.
+ * @param stream The CUDA stream.
+ */
 template <typename T>
 void invokeBanRepeatNgram(T* logits, const int** output_ids_buf, const bool* finished_buf, const int* parent_ids_buf,
-    int batch_size, int local_batch_size, int beam_width, const int* no_repeat_ngram_size_buf, int id_offset,
-    int vocab_size_padded, size_t step, cudaStream_t stream);
-
-} // namespace kernels
-} // namespace tensorrt_llm
+                          int batch_size, int local_batch_size, int beam_width, const int* no_repeat_ngram_size_t,
+                          int id_offset, int voc
