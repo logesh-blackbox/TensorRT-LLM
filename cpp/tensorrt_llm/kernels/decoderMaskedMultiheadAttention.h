@@ -33,6 +33,7 @@ namespace kernels
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Checks for CUDA errors and exits the program if an error is found.
 #define CHECK_CUDA(call)                                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -46,8 +47,7 @@ namespace kernels
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// Round up to next higher power of 2 (return x if it's already a power
-/// of 2).
+// Rounds up to the next higher power of 2.
 inline int pow2roundup(int x)
 {
     if (x < 0)
@@ -63,16 +63,7 @@ inline int pow2roundup(int x)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// The structure of parameters for the masked multihead attention kernel.
-//
-// We use the following terminology to describe the different dimensions.
-//
-// B:  Batch size (number of sequences),
-// L:  Sequence length,
-// D:  Hidden dimension,
-// H:  Number of heads,
-// Dh: Hidden dimension per head - Dh = D / H.
-
+// Base structure for multihead attention parameters.
 template <typename T>
 struct Multihead_attention_params_base
 {
@@ -144,95 +135,4 @@ struct Multihead_attention_params_base
     const float* kv_scale_orig_quant = nullptr;
     const float* kv_scale_quant_orig = nullptr;
 
-    bool int8_kv_cache = false;
-    bool fp8_kv_cache = false;
-
-    // Multi-block setups
-    bool multi_block_mode = false;
-
-    // Number of streaming processors on the device.
-    // Tune block size to maximum occupancy.
-    int multi_processor_count = 1;
-
-    mutable int timesteps_per_block = -1;
-    mutable int seq_len_tile = -1;
-
-    mutable int max_seq_len_tile = -1;
-    // The partial output buffer. Dimensions max_seq_len_tile x B x D. (for each timestep only seq_len_tile x B x D is
-    // needed)
-    T* partial_out = nullptr;
-    // ThreadBlock sum. Dimensions max_seq_len_tile x 1. (for each timestep only seq_len_tile x 1 is needed)
-    float* partial_sum = nullptr;
-    // ThreadBlock max. Dimensions max_seq_len_tile x 1. (for each timestep only seq_len_tile x 1 is needed)
-    float* partial_max = nullptr;
-    // threadblock counter to identify the complete of partial attention computations
-    int* block_counter = nullptr;
-
-    const int* memory_length_per_sample = nullptr;
-};
-
-template <typename T, bool USE_CROSS_ATTENTION = false>
-struct Multihead_attention_params;
-
-// self-attention params
-template <typename T>
-struct Multihead_attention_params<T, false> : public Multihead_attention_params_base<T>
-{
-    static constexpr bool DO_CROSS_ATTENTION = false;
-
-    int max_decoder_seq_len = 0;
-
-    // allows to exit attention early
-    bool* finished = nullptr;
-
-    // required in case of masked attention with different length
-    const int* length_per_sample = nullptr;
-
-    // input lengths to identify the paddings (i.e. input seq < padding < new generated seq).
-    const int* input_lengths = nullptr;
-};
-template <class T>
-using Masked_multihead_attention_params = Multihead_attention_params<T, false>;
-
-// cross-attention params
-template <typename T>
-struct Multihead_attention_params<T, true> : public Multihead_attention_params_base<T>
-{
-    static constexpr bool DO_CROSS_ATTENTION = true;
-
-    int max_decoder_seq_len = 0;
-
-    // allows to exit attention early
-    bool* finished = nullptr;
-
-    // required in case of masked attention with different length
-    const int* length_per_sample = nullptr;
-
-    // input lengths to identify the paddings (i.e. input seq < padding < new generated seq).
-    const int* input_lengths = nullptr;
-};
-template <class T>
-using Cross_multihead_attention_params = Multihead_attention_params<T, true>;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define DECLARE_MMHA_NORMAL_AND_PAGED(T)                                                                               \
-    void masked_multihead_attention(const Masked_multihead_attention_params<T>& params,                                \
-        const KVBlockArray& block_array, const cudaStream_t& stream);                                                  \
-    void masked_multihead_attention(const Masked_multihead_attention_params<T>& params,                                \
-        const KVLinearBuffer& kv_cache_buffer, const cudaStream_t& stream);                                            \
-    void masked_multihead_attention(const Cross_multihead_attention_params<T>& params,                                 \
-        const KVBlockArray& block_array, const cudaStream_t& stream);                                                  \
-    void masked_multihead_attention(const Cross_multihead_attention_params<T>& params,                                 \
-        const KVLinearBuffer& kv_cache_buffer, const cudaStream_t& stream);
-DECLARE_MMHA_NORMAL_AND_PAGED(float);
-DECLARE_MMHA_NORMAL_AND_PAGED(uint16_t);
-#ifdef ENABLE_BF16
-DECLARE_MMHA_NORMAL_AND_PAGED(__nv_bfloat16);
-#endif
-#undef DECLARE_MMHA_NORMAL_AND_PAGED
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-} // namespace kernels
-} // namespace tensorrt_llm
+    bool int8
