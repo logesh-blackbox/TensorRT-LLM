@@ -98,3 +98,4 @@ Runtime
 subprocess.run(['mkdir', '-p', CPP_GEN_DIR])
 gen_cpp_doc(CPP_GEN_DIR + '/runtime.rst', CPP_INCLUDE_DIR + '/runtime',
             runtime_summary)
+
