@@ -22,7 +22,22 @@ namespace kernels
 {
 namespace cutlass_kernels
 {
-template class CutlassFpAIntBGemmRunner<half, cutlass::uint4b_t, cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY>;
-} // namespace cutlass_kernels
-} // namespace kernels
-} // namespace tensorrt_llm
+
+// The template class for the FP16-INT8 GEMM kernel.
+template <typename FpA, typename IntB, typename Op>
+class CutlassFpAIntBGemmRunner
+{
+public:
+    // The constructor.
+    CutlassFpAIntBGemmRunner() = default;
+
+    // The destructor.
+    ~CutlassFpAIntBGemmRunner() = default;
+
+    // The function to run the FP16-INT8 GEMM kernel.
+    void run(const FpA* fpA, const IntB* intB, FpA* fpC, int m, int n, int k, float fpA_scale, float fpB_scale, float fpC_scale);
+};
+
+// The implementation of the run function.
+template <typename FpA, typename IntB, typename Op>
+void CutlassFpAIntBGemmRunner<FpA, IntB, Op>::run(const FpA* fpA, const IntB* intB, FpA* fpC, int m, int n, int k, float fpA_scale, float fpB_scale, float fp
