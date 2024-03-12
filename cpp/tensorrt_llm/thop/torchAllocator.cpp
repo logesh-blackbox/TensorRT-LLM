@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "torchAllocator.h"
 #include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/cudaUtils.h"
@@ -21,8 +22,8 @@
 using namespace tensorrt_llm::thop;
 using namespace tensorrt_llm::common;
 
+// Determines the type of reallocation needed based on the current and new sizes.
 ReallocType TorchAllocator::reallocType(void const* ptr, size_t size) const
-
 {
     TLLM_CHECK(contains(ptr));
     size_t currentSize = 1;
@@ -31,7 +32,9 @@ ReallocType TorchAllocator::reallocType(void const* ptr, size_t size) const
     {
         currentSize *= tensor.size(i);
     }
+
     TLLM_LOG_DEBUG("current_buffer_size: %d, original buffer: %p, new buffer: %d", currentSize, ptr, size);
+
     if (currentSize < size)
     {
         return ReallocType::INCREASE;
@@ -46,21 +49,25 @@ ReallocType TorchAllocator::reallocType(void const* ptr, size_t size) const
     }
 }
 
+// Allocates a new buffer of the specified size and sets it to zero if required.
 void* TorchAllocator::malloc(size_t size, bool const setZero)
 {
     TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     auto const bufSize = static_cast<int64_t>(size);
     torch::Tensor buf = torch::empty({bufSize}, torch::dtype(torch::kUInt8).device(torch::kCUDA));
     void* ptr{buf.data_ptr()};
+
     if (setZero)
     {
         memSet(ptr, 0, size);
     }
+
     TLLM_LOG_DEBUG("malloc buffer %p with size %ld", ptr, size);
     mPointerMapping.insert({ptr, buf});
     return ptr;
 }
 
+// Frees the buffer associated with the given pointer.
 void TorchAllocator::free(void** ptr)
 {
     TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
@@ -68,7 +75,9 @@ void TorchAllocator::free(void** ptr)
     *ptr = nullptr;
 }
 
+// Fills the buffer with a specified value.
 void TorchAllocator::memSet(void* ptr, int const val, size_t const size)
 {
     check_cuda_error(cudaMemsetAsync(ptr, val, size, mStream));
 }
+
