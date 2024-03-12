@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:179091b7779a2a9ae047be54b65da9f45c66073a9ee34e889a00332ef13d7f39
-size 1489814
+# Git LFS pointer file for a large binary file
+# 
+# This file contains metadata about a large binary file stored in a Git LFS server,
+# including its SHA-256 checksum, size, and type. The actual large file is not stored
+# in the Git repository, but is instead stored in the Git LFS server and referenced
+# by this pointer file.
+#
+# SHA-256 checksum: 179091b7779a2a9ae047be54b65da9f45c66073a9ee34e889a00332ef13d7f39
+# Size: 1489814 bytes
+# Type: Unknown (likely an image, audio, or video file, or another type of large binary file)
