@@ -38,14 +38,14 @@ public:
     //! \param priority Priority of the stream. Lower numbers represent higher priorities. See
     //! ::cudaDeviceGetStreamPriorityRange for more information about the meaningful stream priorities that can be
     //! passed.
-    explicit CudaStream(unsigned int flags = cudaStreamNonBlocking, int priority = 0)
-        : mDevice{tensorrt_llm::common::getDevice()}
+    CudaStream(unsigned int flags = cudaStreamNonBlocking, int priority = 0)
+        : mStream{std::make_unique<std::remove_pointer_t<cudaStream_t>>(nullptr, Deleter{true})},
+          mDevice{tensorrt_llm::common::getDevice()}
     {
         cudaStream_t stream;
         TLLM_CUDA_CHECK(::cudaStreamCreateWithPriority(&stream, flags, priority));
         TLLM_LOG_TRACE("Created stream %p", stream);
-        bool constexpr ownsStream{true};
-        mStream = StreamPtr{stream, Deleter{ownsStream}};
+        mStream.reset(stream);
     }
 
     //! Pass an existing cuda stream to this object.
@@ -53,11 +53,11 @@ public:
     //! \param stream The stream to pass to this object.
     //! \param device The device on which the stream was created.
     //! \param ownsStream Whether this object owns the stream and destroys it in the destructor.
-    explicit CudaStream(cudaStream_t stream, int device, bool ownsStream = true)
-        : mDevice{device}
+    CudaStream(cudaStream_t stream, int device, bool ownsStream = true)
+        : mStream{std::make_unique<std::remove_pointer_t<cudaStream_t>>(stream, Deleter{ownsStream})},
+          mDevice{device}
     {
         TLLM_CHECK_WITH_INFO(stream != nullptr, "stream is nullptr");
-        mStream = StreamPtr{stream, Deleter{ownsStream}};
     }
 
     //! Returns the device on which the stream was created.
@@ -129,10 +129,9 @@ private:
         bool mOwnsStream;
     };
 
-    using StreamPtr = std::unique_ptr<std::remove_pointer_t<cudaStream_t>, Deleter>;
-
-    StreamPtr mStream;
+    std::unique_ptr<std::remove_pointer_t<cudaStream_t>, Deleter> mStream;
     int mDevice{-1};
 };
 
 } // namespace tensorrt_llm::runtime
+
