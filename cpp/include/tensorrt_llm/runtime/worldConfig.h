@@ -100,7 +100,7 @@ public:
 
     [[nodiscard]] std::vector<SizeType> getPipelineParallelGroup() const;
 
-    static bool validConfig(nvinfer1::ILogger& logger, SizeType tensorParallelism, SizeType pipelineParallelism);
+    static bool validConfig(nvinfer1::ILogger& logger, const WorldConfig& config);
 
     static WorldConfig mpi(nvinfer1::ILogger& logger, SizeType gpusPerNode = kDefaultGpusPerNode,
         std::optional<SizeType> tensorParallelism = std::nullopt,
@@ -117,4 +117,4 @@ private:
     SizeType mGpusPerNode;
 };
 
-} // namespace tensorrt_llm::runtime
+} // namespace tensorrt_llm::
