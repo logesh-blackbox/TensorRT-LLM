@@ -1,17 +1,3 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import functools
 import logging
 import os
@@ -136,4 +122,15 @@ def unpack_nemo_ckpt(nemo_archive_path: typing.Union[str, pathlib.Path],
     raise RuntimeError(f"Could not unpack {nemo_archive_path}")
 
 
-# Define a function to
+# Define a function to load a Nemo model checkpoint
+def load_nemo_ckpt(nemo_ckpt_path: typing.Union[str, pathlib.Path],
+                   device: torch.device):
+    # Convert the input path to a pathlib.Path object
+    nemo_ckpt_path = pathlib.Path(nemo_ckpt_path)
+
+    # Check if the checkpoint exists
+    if not nemo_ckpt_path.exists():
+        raise FileNotFoundError(f"{nemo_ckpt_path} does not exist")
+
+    # Load the Nemo model checkpoint
+    nemo_model = torch.load(nemo_ckpt_path, map
