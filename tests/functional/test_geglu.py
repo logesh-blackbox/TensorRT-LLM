@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import unittest
 
 import numpy as np
@@ -25,12 +26,23 @@ from tensorrt_llm import Tensor
 
 
 class TestFunctional(unittest.TestCase):
+    """
+    Test class for functional methods in tensorrt_llm.
+    """
 
     def setUp(self):
+        """
+        Set up the logger to only show error messages.
+        """
         tensorrt_llm.logger.set_level('error')
 
     @parameterized.expand([('float32', )])
     def test_geglu(self, dtype):
+        """
+        Test the geglu functional method with a specific data type.
+
+        :param dtype: Data type to use for the test.
+        """
         # test data
         x_shape = (12, 2, 96)
         x_data = torch.rand(x_shape,
