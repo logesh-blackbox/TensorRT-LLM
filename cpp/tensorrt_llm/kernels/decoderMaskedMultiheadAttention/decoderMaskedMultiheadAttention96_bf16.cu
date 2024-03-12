@@ -23,13 +23,15 @@ namespace kernels
 
 namespace
 {
-auto constexpr kSizePerHead = 96;
+// Define the size per head as a constant variable
+constexpr int kSizePerHead = 96;
 } // namespace
 
 namespace mmha
 {
 
 #ifdef ENABLE_BF16
+// Use a macro to instantiate the launchers for different data types
 INSTANTIATE_MMHA_LAUNCHERS(__nv_bfloat16, kSizePerHead)
 #endif
 
@@ -37,3 +39,4 @@ INSTANTIATE_MMHA_LAUNCHERS(__nv_bfloat16, kSizePerHead)
 
 } // namespace kernels
 } // namespace tensorrt_llm
+
