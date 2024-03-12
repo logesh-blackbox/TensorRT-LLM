@@ -24,6 +24,23 @@ namespace tensorrt_llm
 namespace kernels
 {
 
+// Initialize bad words array for demonstration purposes
+void initializeBadWords(int* badWords, size_t badWordsLen, const std::string& badWordsString)
+{
+    size_t currentIndex = 0;
+    for (size_t i = 0; i < badWordsString.length(); ++i)
+    {
+        if (badWordsString[i] == ' ')
+        {
+            ++currentIndex;
+        }
+        else
+        {
+            badWords[currentIndex] = badWordsString[i];
+        }
+    }
+}
+
 template <typename T>
 __global__ void ban_bad_words(T* logits, const int** output_ids_ptr, const int** parent_ids_ptr, int batch_size,
     int beam_width, const int* bad_words, size_t bad_words_len, bool share_words, int vocab_size_padded,
@@ -47,9 +64,8 @@ __global__ void ban_bad_words(T* logits, const int** output_ids_ptr, const int**
 
     /* The single-token case unconditionally bans the token */
     bool should_ban = item_size == 1;
-    const int current_step{sequence_lengths[blockIdx.y]};
-    /* Multi-token case and enough previously generated tokens to look for a match
-     */
+    const int current_step = sequence_lengths[blockIdx.y];
+    /* Multi-token case and enough previously generated tokens to look for a match */
     if (item_size > 1 && current_step >= item_size - 1)
     {
         should_ban = true;
@@ -103,22 +119,4 @@ void invokeBanBadWords(T* logits, const int** output_ids_ptr, const int** parent
     grid.x = (bad_words_len + block.x - 1) / block.x;
     grid.y = local_batch_size * beam_width;
 
-    ban_bad_words<<<grid, block, 0, stream>>>(logits, output_ids_ptr, parent_ids_ptr, batch_size, beam_width, bad_words,
-        bad_words_len, share_words, vocab_size_padded, sequence_lengths, max_seq_len);
-    sync_check_cuda_error();
-}
-
-template void invokeBanBadWords(half* logits, const int** output_ids_ptr, const int** parent_ids_ptr, int batch_size,
-    int local_batch_size, int beam_width, const int* bad_words, bool share_words, size_t bad_words_len,
-    int vocab_size_padded, const int* sequence_lengths, int max_seq_len, cudaStream_t stream);
-#ifdef ENABLE_BF16
-template void invokeBanBadWords(__nv_bfloat16* logits, const int** output_ids_ptr, const int** parent_ids_ptr,
-    int batch_size, int local_batch_size, int beam_width, const int* bad_words, bool share_words, size_t bad_words_len,
-    int vocab_size_padded, const int* sequence_lengths, int max_seq_len, cudaStream_t stream);
-#endif
-template void invokeBanBadWords(float* logits, const int** output_ids_ptr, const int** parent_ids_ptr, int batch_size,
-    int local_batch_size, int beam_width, const int* bad_words, bool share_words, size_t bad_words_len,
-    int vocab_size_padded, const int* sequence_lengths, int max_seq_len, cudaStream_t stream);
-
-} // namespace kernels
-} // namespace tensorrt_llm
+    ban_bad_words<<<grid, block, 0, stream>>>(logits, output_ids_ptr, parent_ids_ptr, batch_size,
