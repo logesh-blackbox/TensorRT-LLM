@@ -101,3 +101,4 @@ std::vector<SizeType> WorldConfig::getPipelineParallelGroup() const
     }
     return group;
 }
+
