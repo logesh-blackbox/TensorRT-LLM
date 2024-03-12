@@ -1,6 +1,3 @@
-'''
-Convert huggingface Bloom model. Use https://huggingface.co/bigscience/bloom as demo.
-'''
 import argparse
 import configparser
 import dataclasses
@@ -131,4 +128,5 @@ def smooth_bloom_model(model, scales, alpha, bloom_qkv_param, bloom_smoother):
         param = module.self_attention.query_key_value.weight
         param = reorder_torch_qkv_weight_or_bias(param, model, is_bias=False)
 
-        layer_name = name + ".
+        layer_name = name + ".self_attention.query_key_value.weight"
+       
