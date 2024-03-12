@@ -18,7 +18,6 @@
 #pragma once
 
 #include <nvtx3/nvtx3.hpp>
-
 #include <array>
 
 namespace tensorrt_llm::common::nvtx
@@ -41,4 +40,5 @@ inline nvtx3::color nextColor()
 
 } // namespace tensorrt_llm::common::nvtx
 
-#define NVTX3_SCOPED_RANGE(range) ::nvtx3::scoped_range range##_range(::tensorrt_llm::common::nvtx::nextColor(), #range)
+#define NVTX3_SCOPED_RANGE(range) ::nvtx3::scoped_range range##_range(tensorrt_llm::common::nvtx::nextColor(), #range)
+
