@@ -1,4 +1,3 @@
-#
 # SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
 # AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
 #
@@ -120,3 +119,4 @@ target_link_libraries(
   ${MPI_LIBRARIES}
   ${NCCL_LIB}
   ${STATIC_TARGET})
+
