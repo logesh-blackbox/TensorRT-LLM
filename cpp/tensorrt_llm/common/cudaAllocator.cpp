@@ -27,7 +27,7 @@ CudaAllocator::CudaAllocator(tr::BufferManager bufferManager)
 {
 }
 
-ReallocType CudaAllocator::reallocType(void const* ptr, size_t size) const
+CudaAllocator::ReallocType CudaAllocator::reallocType(void const* ptr, size_t size) const
 {
     TLLM_CHECK(contains(ptr));
     auto const currentSize = mPointerMapping.at(ptr)->getSize();
@@ -71,3 +71,4 @@ void CudaAllocator::memSet(void* ptr, int const val, size_t const size)
 {
     check_cuda_error(cudaMemsetAsync(ptr, val, size, mBufferManager.getStream().get()));
 }
+
