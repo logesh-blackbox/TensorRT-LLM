@@ -66,7 +66,7 @@ class BloomDecoderLayer(Module):
             max_position_embeddings,
             num_layers,
             dtype=dtype,
-            attention_mask_type=AttentionMaskType.causal,
+            attention_mask_type=attention_mask_type,
             position_embedding_type=position_embedding_type,
             bias=bias,
             tp_group=tp_group,
@@ -149,5 +149,4 @@ class BloomModel(Module):
                                        dtype=dtype,
                                        tp_group=mapping.tp_group,
                                        tp_size=mapping.tp_size,
-                                       sharding_dim=embedding_sharding_dim,
-                                       tp
+                                       sharding_dim
