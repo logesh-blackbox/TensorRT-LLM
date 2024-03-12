@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ def get_memory_info(handle):
     mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
     total = round(mem_info.total / 1024 / 1024 / 1024, 2)
     used = round(mem_info.used / 1024 / 1024 / 1024, 2)
-    free = round(mem_info.used / 1024 / 1024 / 1024, 2)
+    free = round(mem_info.free / 1024 / 1024 / 1024, 2)
     return total, used, free
 
 
@@ -30,9 +30,10 @@ def mem_monitor(q1, q2):
     handle = pynvml.nvmlDeviceGetHandleByIndex(0)
 
     peak_used = 0
-    while q1.empty():
-        _, used, _ = get_memory_info(handle)
+    while not q1.empty():
+        total, used, free = get_memory_info(handle)
         peak_used = max(used, peak_used)
+        q1.get()  # consume the item in the queue
         time.sleep(0.1)
 
     pynvml.nvmlShutdown()
