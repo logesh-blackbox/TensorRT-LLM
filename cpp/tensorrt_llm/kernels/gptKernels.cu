@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "tensorrt_llm/common/cudaBf16Wrapper.h"
 #include "tensorrt_llm/common/cudaFp8Utils.h"
 #include "tensorrt_llm/common/reduceKernelUtils.cuh"
@@ -139,111 +140,4 @@ __global__ void computeAttentionMask(
     // The index of the sequence in the batch.
     int batchIdx = blockIdx.y;
 
-    // The number of items in the mask for each sequence.
-    int maskSize = maxSeqLength * maxSeqLength;
-    // The offset to the 1st element of the mask for that particular sequence.
-    int batchOffset = batchIdx * maskSize;
-
-    // The beginning of the sequence.
-    int seqBegin = seqOffsets[batchIdx];
-    // The offset to the 1st element of the next sequence.
-    int seqEnd = seqOffsets[batchIdx + 1];
-    // The length of the sequence.
-    int seqLength = seqEnd - seqBegin;
-
-    // Iterate over the tokens to update the number of padded elements.
-    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < maskSize; idx += blockDim.x)
-    {
-        // The position in the matrix.
-        int rowIdx = idx / maxSeqLength;
-        int colIdx = idx % maxSeqLength;
-
-        // Is it a valid token?
-        bool isValid = true;
-        switch (attentionMaskType)
-        {
-        case AttentionMaskType::PADDING:
-            isValid = rowIdx < seqLength && colIdx < seqLength;
-            // seq_length==4, max_seq_len==5
-            // 1 1 1 1 0
-            // 1 1 1 1 0
-            // 1 1 1 1 0
-            // 1 1 1 1 0
-            // 0 0 0 0 0
-            break;
-        case AttentionMaskType::CAUSAL:
-            isValid = rowIdx < seqLength && colIdx < seqLength && colIdx <= rowIdx;
-            // seq_length==4, max_seq_len==5
-            // 1 0 0 0 0
-            // 1 1 0 0 0
-            // 1 1 1 0 0
-            // 1 1 1 1 0
-            // 0 0 0 0 0
-            break;
-        case AttentionMaskType::BIDIRECTIONAL:
-            // clang-format off
-            isValid = (rowIdx <  seqLength - 1 && colIdx < seqLength - 1) ||
-                      (rowIdx == seqLength - 1 && colIdx < seqLength);
-            // clang-format on
-            // seq_length==4, max_seq_len==5, only use in context phase
-            // 1 1 1 0 0
-            // 1 1 1 0 0
-            // 1 1 1 0 0
-            // 1 1 1 1 0
-            // 0 0 0 0 0
-            break;
-        }
-
-        // Store the mask.
-        attentionMask[batchOffset + idx] = isValid ? AttentionMaskDataType(1.f) : AttentionMaskDataType(0.f);
-    }
-}
-
-template <typename T>
-void invokeBuildDecoderInfo(const BuildDecoderInfoParams<T>& params, cudaStream_t stream)
-{
-    // Compute the sequence offsets.
-    const int THREADS_PER_BLOCK = 256;
-    computeSeqOffsets<THREADS_PER_BLOCK>
-        <<<1, THREADS_PER_BLOCK, 0, stream>>>(params.seqOffsets, params.seqLengths, params.batchSize);
-
-    // Compute the padding offsets.
-    computePaddingOffsets<<<params.batchSize, THREADS_PER_BLOCK, 0, stream>>>(
-        params.paddingOffsets, params.seqOffsets, params.maxSeqLength);
-
-    // Compute the attention mask, if needed.
-    if (params.attentionMask != nullptr)
-    {
-        // large value like 512 hurts kernel perf at long sequence length. Keep small for now.
-        const int MIN_BLOCKS = 16;
-        int blocksPerSeq = 16;
-        while (blocksPerSeq * params.batchSize < MIN_BLOCKS)
-        {
-            blocksPerSeq *= 2;
-        }
-        dim3 grid(blocksPerSeq, params.batchSize);
-        computeAttentionMask<<<grid, THREADS_PER_BLOCK, 0, stream>>>(
-            params.attentionMask, params.seqOffsets, params.maxSeqLength, params.attentionMaskType);
-    }
-}
-
-template void invokeBuildDecoderInfo(const BuildDecoderInfoParams<float>&, cudaStream_t);
-template void invokeBuildDecoderInfo(const BuildDecoderInfoParams<half>&, cudaStream_t);
-#ifdef ENABLE_BF16
-template void invokeBuildDecoderInfo(const BuildDecoderInfoParams<__nv_bfloat16>&, cudaStream_t);
-#endif
-#ifdef ENABLE_FP8
-template void invokeBuildDecoderInfo(const BuildDecoderInfoParams<__nv_fp8_e4m3>&, cudaStream_t);
-#endif
-
-__global__ void updatePaddingCountKernel(int* paddingPerSeq, const int* seqLengths, int maxSeqLength, int batchSize)
-{
-
-    for (int ii = threadIdx.x; ii < batchSize; ii += blockDim.x)
-    {
-        paddingPerSeq[ii] = maxSeqLength - seqLengths[ii];
-    }
-}
-
-} // namespace kernels
-} // namespace tensorrt_llm
+    // The number of items in
