@@ -97,7 +97,15 @@ struct CustomARCommTypeConverter<__nv_bfloat16>
 #endif
 
 void customAllReduce(kernels::AllReduceParams& params, void* data, size_t elts, size_t size_per_elem,
-    common::datatype_enum dataType, AllReduceStrategyType strat, cudaStream_t stream);
+    common::datatype_enum dataType, AllReduceStrategyType strat, cudaStream_t stream)
+{
+    if (elts * size_per_elem > CUSTOM_AR_SIZE_THRESHOLD)
+    {
+        strat = AllReduceStrategyType::RING;
+    }
 
-} // namespace tensorrt_llm::kernels
+    invokeOneOrTwoShotAllReduceKernel<T>(params, strat, stream);
+}
 
+template <typename T>
+void
